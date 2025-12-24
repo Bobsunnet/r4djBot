@@ -3,7 +3,7 @@ import sqlite3
 import requests
 
 URL_SHEET = "https://script.google.com/macros/s/AKfycbyIqo_k_VKMYcqZSiVhiQvsbYlwE0G6OjbvBDeYWZ7Fk09J4lMRXKy1bwK8gRA2Y6SkgA/exec"
-
+logger = logging.getLogger(__name__)
 
 def download_sheets_data(url: str)->list:
     try:
@@ -47,6 +47,8 @@ class SqliteConnection:
 
 
 class DBHandler:
+    sync_on = False
+
     def __init__(self, db_name:str):
         self.db_name = db_name
         self.update_table()
@@ -67,6 +69,10 @@ class DBHandler:
             return cursor.fetchone()
 
     def update_table(self):
+        if not self.sync_on:
+            logger.warning("Sync is turned off. Skipping database update.")
+            return
+        
         data = get_prices_data()
         if data:
             with self._get_cursor() as cursor:
@@ -88,7 +94,7 @@ class DBHandler:
                         INSERT INTO items (hash_code, name, desc, amount, price)
                         VALUES (?, ?, ?, ?, ?)
                     """, (item[0], item[1], item[2], int(item[3]), int(item[4])))
-                logging.info("Database updated successfully.")
+                logger.info("Database updated successfully.")
 
 
 db_handler = DBHandler("r4DB.db")
