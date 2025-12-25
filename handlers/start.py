@@ -4,6 +4,7 @@ from aiogram.filters import Command, CommandStart
 from keyboards import make_main_kb, create_spec_kb
 from db_handler import db_handler
 
+
 start_router = Router()
 
 
@@ -16,44 +17,10 @@ async def cmd_start(message: Message):
 @start_router.message(F.text.lower() == "catalogue")
 async def cmd_catalogue(message: Message):
     res = db_handler.read_all()[23:27]
-    await message.answer("Here is our catalogue: \n" + "\n".join([f"{item[1]}. {item[2]} - {item[3]}" for item in res]))
-
-
-@start_router.message(F.text.lower() == "contacts")
-async def cmd_contacts(message:Message):
-    reply_msg = '''
-Для замовлення  та резервування необхідних позицій, будь ласка, надішліть запит менеджеру 👉 t.me/rent4djmanager у такому форматі:
-
-Позиція з прайсу + кількість
-(обовʼязково скопіювати й вставити точну назву позиції з каталогу)
-Приклад:
-L-ACOUSTICS Syva [LF: 6 × 5", HF: 3 × 1.75"] — 2 шт
-
--Дата та час забору обладнання
--Дати роботи
--Дата та час повернення обладнання
-
-📍 Графік роботи складу:
-11:00–18:00 щоденно.
-Перед виїздом, будь ласка, повідомляйте за 1 годину.
-- видача/повернення/доставка в неробочий час, оплачується додатково. 
-
-🚚 Якщо потрібна доставка, додатково вкажіть:
-
--дату та час доставки
--адресу
--контактний номер телефону відповідальної особи на місці
-
-📄 Каталог обладнання:
-https://docs.google.com/spreadsheets/d/1ez7Ur5YD0AiTtN2QEWcgZyhlqLGAA6gln0BgTcbBDqM/edit?gid=0#gid=0
-
-📍 Геолокація складу:
-https://maps.app.goo.gl/Qxrg4aTEkYYxN4Ti8
-
-❗️ При відправці обладнання курʼєром прохання вказувати виключно цю геолокацію.
-'''
-
-    await message.answer(f"Manager contacts...@rent4djmanager")
+    await message.answer(
+        "Here is our catalogue: \n"
+        + "\n".join([f"{item[1]}. {item[2]} - {item[3]}" for item in res])
+    )
 
 
 @start_router.message(Command("start_2"))

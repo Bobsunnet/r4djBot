@@ -11,8 +11,8 @@ def make_main_kb():
         keyboard=buttons,
         resize_keyboard=True,
         one_time_keyboard=True,
-        input_field_placeholder="Use menu..."
-        )
+        input_field_placeholder="Use menu...",
+    )
     return main_keyboard
 
 
@@ -26,6 +26,6 @@ def create_spec_kb():
         keyboard=buttons,
         resize_keyboard=True,
         one_time_keyboard=True,
-        input_field_placeholder="Use menu..."
-        )
+        input_field_placeholder="Use menu...",
+    )
     return spec_keyboard
