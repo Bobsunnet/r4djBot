@@ -17,18 +17,16 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WIFE_CHAT_ID = int(os.getenv("WIFE_CHAT_ID", "0"))
 
-bot = Bot(
-    token=BOT_TOKEN, default_bot_properties=DefaultBotProperties(parse_mode="HTML")
-)
+bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
 dp = Dispatcher(storage=MemoryStorage())
 
 
 async def set_commands():
-    commands = [
+    my_commands = [
         BotCommand(command="start", description="start"),
-        BotCommand(command="start_2", description="start_2"),
+        BotCommand(command="inline", description="Lets inline"),
     ]
-    await bot.set_my_commands(commands, BotCommandScopeDefault())
+    await bot.set_my_commands(commands=my_commands, scope=BotCommandScopeDefault())
 
 
 async def on_startup():
