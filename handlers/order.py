@@ -1,43 +1,71 @@
-from typing import Any
+import json
+import logging
 
 from aiogram import F, Router
 from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message
 
+from keyboards.inline_keyboard import order_inline_kb
+
 order_router = Router()
+logger = logging.getLogger(__name__)
+
+# Mock manager ID (replace with real ID later)
+MANAGER_ID = 123456789
 
 
-class OrderState(StatesGroup):
-    first_position = State()
-    second_position = State()
+@order_router.message(Command("make_order"))
+async def make_order(message: Message):
+    """Open the Web App for catalogue browsing."""
 
-
-@order_router.message(Command("order"))
-async def start_order(message: Message, state: FSMContext):
-    await state.set_state(OrderState.first_position)
-    await message.answer("Enter First position")
-
-
-@order_router.message(OrderState.first_position)
-async def process_first_order(message: Message, state: FSMContext):
-    await state.update_data(first_position=message.text)
-    await state.set_state(OrderState.second_position)
     await message.answer(
-        f"ok, your first position is {message.text}.\n\n Enter Second position"
+        "Click the button below to browse the catalogue and add items to your cart:",
+        reply_markup=order_inline_kb(),
     )
 
 
-@order_router.message(OrderState.second_position)
-async def process_second_order(message: Message, state: FSMContext):
-    data = await state.update_data(second_position=message.text)
-    await state.clear()
-    await message.answer(f"ok, your second position is {message.text}.\n\n processing")
-    await show_summary(message, data)
+@order_router.message(F.content_type == "web_app_data")
+async def handle_web_app_data(message: Message):
+    """Process order data sent from the Web App."""
+    try:
+        # Parse the data from Web App
+        data = json.loads(message.web_app_data.data)
+        items = data.get("items", [])
 
+        if not items:
+            await message.answer("Your cart was empty. No order created.")
+            return
 
-async def show_summary(message: Message, data: dict[str, Any]):
-    first = data.get("first_position")
-    second = data.get("second_position")
-    await message.answer(f"Your order: \n{first} \n{second}")
+        # Format order message
+        order_text = f"📦 New Order from {message.from_user.full_name}\n\n"
+        order_text += f"User ID: {message.from_user.id}\n"
+        order_text += f"Username: @{message.from_user.username or 'N/A'}\n\n"
+        order_text += "Items:\n"
+
+        for item in items:
+            order_text += f"• {item['name']} - {item['price']}\n"
+
+        # Send confirmation to user
+        await message.answer(
+            f"✅ Order received!\n\n"
+            f"Items: {len(items)}\n"
+            f"Your order has been sent to the manager."
+        )
+
+        # Forward to manager
+        try:
+            await message.bot.send_message(chat_id=MANAGER_ID, text=order_text)
+            logger.info(f"Order from {message.from_user.id} sent to manager")
+        except Exception as e:
+            logger.error(f"Failed to send order to manager: {e}")
+            await message.answer(
+                "⚠️ Order received but could not be forwarded to manager. "
+                "Please contact support."
+            )
+
+    except json.JSONDecodeError:
+        await message.answer("Failed to process order data. Please try again.")
+        logger.error(f"Invalid JSON from web app: {message.web_app_data.data}")
+    except Exception as e:
+        await message.answer("An error occurred while processing your order.")
+        logger.error(f"Error handling web app data: {e}")

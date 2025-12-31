@@ -71,6 +71,21 @@ class DBHandler:
             cursor.execute(query, (item_id,))
             return cursor.fetchone()
 
+    def get_items_json(self):
+        """Return all items as a list of dictionaries for JSON serialization."""
+        items = self.read_all("items")
+        return [
+            {
+                "id": item[0],
+                "hash": item[1],
+                "name": item[2],
+                "desc": item[3],
+                "amount": item[4],
+                "price": item[5],
+            }
+            for item in items
+        ]
+
     def update_table(self):
         if not self.sync_on:
             logger.warning("Sync is turned off. Skipping database update.")
