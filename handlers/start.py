@@ -2,7 +2,6 @@ from aiogram import F, Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
-from db_handler import db_handler
 from keyboards import make_main_kb, order_inline_kb
 
 start_router = Router()
@@ -15,7 +14,10 @@ start_router = Router()
 async def cmd_start(message: Message):
     print(f"Start command invoked. Uer_id: {message.from_user.id}")
 
-    await message.answer("Hi, im /start comand handler!", reply_markup=make_main_kb())
+    await message.answer(
+        "Привіт, розпочато роботу з ботом. Обери одну з команд",
+        reply_markup=make_main_kb(),
+    )
 
 
 # ------------------------- F.text hadnlers ------------------------
@@ -23,15 +25,14 @@ async def cmd_start(message: Message):
 
 @start_router.message(F.text.lower() == "catalogue")
 async def cmd_catalogue(message: Message):
-    res = db_handler.read_all()[23:27]
     await message.answer(
-        "Here is our catalogue: \n"
-        + "\n".join([f"{item[1]}. {item[2]} - {item[3]}" for item in res])
+        "📄 Каталог обладнання: https://docs.google.com/spreadsheets/d/1ez7Ur5YD0AiTtN2QEWcgZyhlqLGAA6gln0BgTcbBDqM/edit?gid=0#gid=0"
     )
 
 
-@start_router.message(F.text.lower() == "/inline")
+@start_router.message(F.text.lower() == "/order")
 async def cmd_inline_test(message: Message):
     await message.answer(
-        "HEre is your inline keyboard message", reply_markup=order_inline_kb()
+        "Тут ви можете вибрати з катаологу обладнання та оформити замовлення",
+        reply_markup=order_inline_kb(),
     )

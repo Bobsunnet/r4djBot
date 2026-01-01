@@ -23,8 +23,8 @@ dp = Dispatcher(storage=MemoryStorage())
 
 async def set_commands():
     my_commands = [
-        BotCommand(command="start", description="start"),
-        BotCommand(command="inline", description="Lets inline"),
+        BotCommand(command="start", description="Розпочати роботу"),
+        BotCommand(command="order", description="Замовлення"),
     ]
     await bot.set_my_commands(commands=my_commands, scope=BotCommandScopeDefault())
 
