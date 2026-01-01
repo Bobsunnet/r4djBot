@@ -10,13 +10,17 @@ logger = logging.getLogger(__name__)
 # Path to webapp files
 WEBAPP_DIR = Path(__file__).parent.parent / "webapp"
 
+router = web.RouteTableDef()
 
+
+@router.get("/")
 async def handle_index(request):
     """Serve the main Web App HTML file."""
     index_path = WEBAPP_DIR / "index.html"
     return web.FileResponse(index_path)
 
 
+@router.get("/static/{filename}")
 async def handle_static(request):
     """Serve static files (CSS, JS)."""
     filename = request.match_info["filename"]
@@ -28,6 +32,7 @@ async def handle_static(request):
     return web.FileResponse(file_path)
 
 
+@router.get("/api/items")
 async def handle_api_items(request):
     """Return all items as JSON."""
     try:
@@ -43,9 +48,7 @@ async def start_server(host="0.0.0.0", port=8080):
     app = web.Application()
 
     # Routes
-    app.router.add_get("/", handle_index)
-    app.router.add_get("/api/items", handle_api_items)
-    app.router.add_get("/static/{filename}", handle_static)
+    app.router.add_routes(router)
 
     runner = web.AppRunner(app)
     await runner.setup()

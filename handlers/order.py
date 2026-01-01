@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -11,7 +12,7 @@ order_router = Router()
 logger = logging.getLogger(__name__)
 
 # Mock manager ID (replace with real ID later)
-MANAGER_ID = 123456789
+MANAGER_ID = os.getenv("MANAGER_ID")
 
 
 @order_router.message(Command("make_order"))
@@ -43,13 +44,12 @@ async def handle_web_app_data(message: Message):
         order_text += "Items:\n"
 
         for item in items:
-            order_text += f"• {item['name']} - {item['price']}\n"
+            quantity = item.get("quantity", 1)
+            order_text += f"• {item['name']} × {quantity}\n"
 
         # Send confirmation to user
         await message.answer(
-            f"✅ Order received!\n\n"
-            f"Items: {len(items)}\n"
-            f"Your order has been sent to the manager."
+            "✅ Order received!\n\nYour order has been sent to the manager."
         )
 
         # Forward to manager
