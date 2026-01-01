@@ -58,29 +58,41 @@ function setCartQuantity(itemId, quantity) {
     
     updateCartUI();
     renderItemsList(searchInput.value ? 
-        allItems.filter(i => i.name.toLowerCase().includes(searchInput.value.toLowerCase())) : 
+        allItems.filter(i => i.name.toLowerCase().includes(searchInput.value.toLowerCase()) || i.desc.toLowerCase().includes(searchInput.value.toLowerCase())) : 
         allItems
     );
 }
 
-// // Increase quantity
-// function increaseAmount(itemId) {
-//     const currentQty = getCartQuantity(itemId);
-//     const item = allItems.find(i => i.id === itemId);
-    
-//     // Check if we can add more (don't exceed available amount)
-//     if (item && currentQty < item.amount) {
-//         setCartQuantity(itemId, currentQty + 1);
-//     }
-// }
+// Increase quantity
+function addToCart(itemId) {
+    const item = allItems.find(i => i.id === itemId);
+    if (!item) return;
 
-// // Decrease quantity
-// function decreaseAmount(itemId) {
-//     const currentQty = getCartQuantity(itemId);
-//     if (currentQty > 0) {
-//         setCartQuantity(itemId, currentQty - 1);
-//     }
-// }
+    // Get quantity from input
+    const input = document.getElementById(`qty-${itemId}`);
+    const addAmount = input ? (parseInt(input.value) || 0) : 1;
+
+    if (addAmount <= 0) return;
+
+    const currentQty = getCartQuantity(itemId);
+    
+    // Check if we can add more (don't exceed available amount)
+    if (currentQty + addAmount <= item.amount) {
+        setCartQuantity(itemId, currentQty + addAmount);
+        if (input) input.value = 0; // Reset input
+    }
+}
+
+
+function increaseInCartAmount(itemId) {
+    const cartItem = cart.find(c => c.item.id === itemId);
+    const itemQuantityElement = document.getElementById(`cart-qty-${itemId}`);
+    if (cartItem.quantity + 1 > cartItem.item.amount) return;
+
+    itemQuantityElement.textContent = cartItem.quantity + 1;
+    cartItem.quantity += 1;
+    updateCartUI();
+}
 
 // Render items list
 function renderItemsList(items) {
@@ -99,16 +111,14 @@ function renderItemsList(items) {
                 <div class="item-price">Available: ${item.amount}</div>
             </div>
             <div class="quantity-controls">
-                // <button class="qty-btn" onclick="decreaseAmount(${item.id})" ${qty === 0 ? 'disabled' : ''}>−</button>
-                <input type="number" value="${qty}" min="0" max="${item.amount}" class="qty-display">
-                // <button class="qty-btn" onclick="increaseAmount(${item.id})" ${qty >= item.amount ? 'disabled' : ''}>+</button>
+                <input type="number" id="qty-${item.id}" value=1 min="1" max="${item.amount}" class="qty-display">
+                <button class="qty-btn" onclick="addToCart(${item.id})">+</button>
             </div>
         </div>
     `;
     }).join('');
 }
 
-// Search functionality
 searchInput.addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase();
     const filtered = allItems.filter(item => 
@@ -133,6 +143,8 @@ function updateCartUI() {
     } else {
         tg.MainButton.hide();
     }
+    
+    renderCart();
 }
 
 function renderCart() {
@@ -149,8 +161,8 @@ function renderCart() {
             </div>
             <div class="quantity-controls">
                 <button class="qty-btn-small" onclick="decreaseAmount(${cartItem.item.id})">−</button>
-                <span class="qty-display-small">${cartItem.quantity}</span>
-                <button class="qty-btn-small" onclick="increaseAmount(${cartItem.item.id})">+</button>
+                <span class="qty-display-small" id="cart-qty-${cartItem.item.id}">${cartItem.quantity}</span>
+                <button class="qty-btn-small" onclick="increaseInCartAmount(${cartItem.item.id})">+</button>
             </div>
         </div>
     `).join('');
