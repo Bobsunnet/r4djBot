@@ -1,3 +1,5 @@
+import loadItems from './api.js';
+import escapeHtml from './utils.js';
 // Initialize Telegram Web App
 const tg = window.Telegram.WebApp;
 tg.expand();
@@ -17,17 +19,7 @@ const cartItems = document.getElementById('cartItems');
 const cartTotal = document.getElementById('cartTotal');
 
 // Load items from API
-async function loadItems() {
-    try {
-        const response = await fetch('/api/items');
-        const data = await response.json();
-        allItems = data.items || [];
-        renderItemsList(allItems);
-    } catch (error) {
-        itemsList.innerHTML = '<div class="loading">Failed to load items</div>';
-        console.error('Error loading items:', error);
-    }
-}
+
 
 // Get quantity of item in cart
 function getCartQuantity(itemId) {
@@ -57,32 +49,35 @@ function setCartQuantity(itemId, quantity) {
     }
     
     updateCartUI();
-    renderItemsList(searchInput.value ? 
-        allItems.filter(i => i.name.toLowerCase().includes(searchInput.value.toLowerCase()) || i.desc.toLowerCase().includes(searchInput.value.toLowerCase())) : 
-        allItems
-    );
+
+    const filteredItems = searchInput.value ? 
+        allItems.filter(i => 
+            i.name.toLowerCase().includes(searchInput.value.toLowerCase()) || 
+            i.desc.toLowerCase().includes(searchInput.value.toLowerCase())) : 
+        allItems;
+    
+    renderItemsList(filteredItems);
 }
 
 // Increase quantity
 function addToCart(itemId) {
     const item = allItems.find(i => i.id === itemId);
-    if (!item) return;
+    if (!item) 
+        return;
 
-    // Get quantity from input
-    const input = document.getElementById(`qty-${itemId}`);
-    const addAmount = input ? (parseInt(input.value) || 0) : 1;
-
-    if (addAmount <= 0) return;
+    const inputField = document.getElementById(`qty-${itemId}`);
+    const addAmount = inputField ? (parseInt(inputField.value) || 0) : 1;
+    if (addAmount <= 0) 
+        return;
 
     const currentQty = getCartQuantity(itemId);
     
-    // Check if we can add more (don't exceed available amount)
     if (currentQty + addAmount <= item.amount) {
         setCartQuantity(itemId, currentQty + addAmount);
-        if (input) input.value = 0; // Reset input
+        if (inputField) 
+            inputField.value = 0;
     }
 }
-
 
 function increaseInCartAmount(itemId) {
     const cartItem = cart.find(c => c.item.id === itemId);
@@ -91,6 +86,21 @@ function increaseInCartAmount(itemId) {
 
     itemQuantityElement.textContent = cartItem.quantity + 1;
     cartItem.quantity += 1;
+    updateCartUI();
+}
+
+function decreaseInCartAmount(itemId) {
+    const cartItem = cart.find(c => c.item.id === itemId);
+    const itemQuantityElement = document.getElementById(`cart-qty-${itemId}`);
+    if (cartItem.quantity - 1 < 1) {
+        cart.splice(cart.indexOf(cartItem), 1)
+        console.log(cart);
+        updateCartUI();
+        return;
+    };
+
+    itemQuantityElement.textContent = cartItem.quantity - 1;
+    cartItem.quantity -= 1;
     updateCartUI();
 }
 
@@ -119,16 +129,6 @@ function renderItemsList(items) {
     }).join('');
 }
 
-searchInput.addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase();
-    const filtered = allItems.filter(item => 
-        item.name.toLowerCase().includes(query) ||
-        (item.desc && item.desc.toLowerCase().includes(query))
-    );
-    renderItemsList(filtered);
-});
-
-// Cart functions
 function updateCartUI() {
     const totalItems = cart.reduce((sum, c) => sum + c.quantity, 0);
     cartCount.textContent = totalItems;
@@ -143,7 +143,7 @@ function updateCartUI() {
     } else {
         tg.MainButton.hide();
     }
-    
+
     renderCart();
 }
 
@@ -160,13 +160,23 @@ function renderCart() {
                 <div class="cart-item-price">${cartItem.item.price} × ${cartItem.quantity} = ${cartItem.item.price * cartItem.quantity}</div>
             </div>
             <div class="quantity-controls">
-                <button class="qty-btn-small" onclick="decreaseAmount(${cartItem.item.id})">−</button>
+                <button class="qty-btn-small" onclick="decreaseInCartAmount(${cartItem.item.id})">−</button>
                 <span class="qty-display-small" id="cart-qty-${cartItem.item.id}">${cartItem.quantity}</span>
                 <button class="qty-btn-small" onclick="increaseInCartAmount(${cartItem.item.id})">+</button>
             </div>
         </div>
     `).join('');
 }
+
+searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase();
+    const filtered = allItems.filter(item => 
+        item.name.toLowerCase().includes(query) ||
+        (item.desc && item.desc.toLowerCase().includes(query))
+    );
+    renderItemsList(filtered);
+});
+
 
 // Show cart overlay
 cartBtn.addEventListener('click', () => {
@@ -196,17 +206,20 @@ tg.MainButton.onClick(() => {
         })),
         total: cart.reduce((sum, c) => sum + (c.item.price * c.quantity), 0)
     };
+    console.log(orderData);
     
-    tg.sendData(JSON.stringify(orderData));
+    // tg.sendData(JSON.stringify(orderData));
 });
 
-// Utility function to escape HTML
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
 // Initialize
-loadItems();
+loadItems().then(items => {
+    if (items) {
+        allItems = items;
+        renderItemsList(allItems);
+    }
+});
 updateCartUI();
+
+window.addToCart = addToCart;
+window.increaseInCartAmount = increaseInCartAmount;
+window.decreaseInCartAmount = decreaseInCartAmount;
