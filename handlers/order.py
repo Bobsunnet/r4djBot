@@ -1,15 +1,13 @@
 import json
 import logging
-import os
 
 from aiogram import F, Router
 from aiogram.types import Message
 
+import config
+
 order_router = Router()
 logger = logging.getLogger(__name__)
-
-# Mock manager ID (replace with real ID later)
-MANAGER_ID = os.getenv("MANAGER_ID")
 
 
 @order_router.message(F.web_app_data)
@@ -43,13 +41,22 @@ async def handle_web_app_data(message: Message):
 
         # Forward to manager
         try:
-            await message.bot.send_message(chat_id=MANAGER_ID, text=order_text)
+            if config.DEBUG:
+                logger.info(f"Order text: {order_text}")
+                # await message.bot.send_message(
+                #     chat_id=config.MANAGER_ID, text=order_text
+                # )
+            else:
+                await message.bot.send_message(
+                    chat_id=config.MANAGER_ID, text=order_text
+                )
+
             logger.info(f"Order from {message.from_user.id} sent to manager")
         except Exception as e:
             logger.error(f"Failed to send order to manager: {e}")
             await message.answer(
-                "⚠️ Замовлення прийнято, але не було надіслане менеджеру. "
-                "Please contact support."
+                "Замовлення прийнято, але не було надіслане менеджеру. "
+                "Зверніться до менеджера."
             )
 
     except json.JSONDecodeError:
