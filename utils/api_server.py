@@ -13,6 +13,24 @@ WEBAPP_DIR = Path(__file__).parent.parent / "webapp"
 router = web.RouteTableDef()
 
 
+def get_items_json():
+    """Return all items formatted for the WebApp JSON API."""
+    import config
+
+    items = db_handler.read_all("items")
+    return [
+        {
+            "id": item["id"],
+            "hash": item["hash_code"],
+            "name": item["name"],
+            "desc": item["desc"],
+            "amount": item["amount"],
+            "price": item["price"] * config.PRICE_MULTIPLIER,
+        }
+        for item in items
+    ]
+
+
 @router.get("/")
 async def handle_index(request):
     """Serve the main Web App HTML file."""
@@ -36,7 +54,7 @@ async def handle_static(request):
 async def handle_api_items(request):
     """Return all items as JSON."""
     try:
-        items = db_handler.get_items_json()
+        items = get_items_json()
         return web.json_response({"items": items})
     except Exception as e:
         logger.error(f"Error fetching items: {e}")

@@ -14,3 +14,6 @@ WIFE_CHAT_ID = int(os.getenv("WIFE_CHAT_ID", "0"))
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1")
 
 LOG_DIR = BASE_DIR / "logs"
+
+# Business Logic
+PRICE_MULTIPLIER = 0.5

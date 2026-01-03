@@ -42,7 +42,7 @@ async def handle_web_app_data(message: Message):
         # Forward to manager
         try:
             if config.DEBUG:
-                logger.info(f"Order text: {order_text}")
+                logger.info(f"Order text:\n{order_text}")
                 # await message.bot.send_message(
                 #     chat_id=config.MANAGER_ID, text=order_text
                 # )

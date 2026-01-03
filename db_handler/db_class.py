@@ -12,7 +12,7 @@ class DBHandler:
     def __init__(self, db_name: str):
         self.db_name = db_name
         self.create_db()
-        self.update_table()
+        self.update_items_table()
 
     def _get_cursor(self):
         return SqliteConnection(self.db_name)
@@ -34,22 +34,7 @@ class DBHandler:
             query = "INSERT INTO users (user_id, username, phone) VALUES (?, ?, ?)"
             cursor.execute(query, (user_id, username, phone))
 
-    def get_items_json(self):
-        """Return all items as a list of dictionaries for JSON serialization."""
-        items = self.read_all("items")
-        return [
-            {
-                "id": item[0],
-                "hash": item[1],
-                "name": item[2],
-                "desc": item[3],
-                "amount": item[4],
-                "price": item[5] * 0.5,
-            }
-            for item in items
-        ]
-
-    def update_table(self):
+    def update_items_table(self):
         if not self.sync_on:
             logger.warning("SYNC IS OFF. Skipping database update.")
             return
@@ -82,7 +67,7 @@ class DBHandler:
                 UNIQUE("hash_code")
                 );
             """)
-            logger.info("Database created successfully.")
+            logger.info("Items table exists or created successfully.")
 
         with self._get_cursor() as cursor:
             cursor.execute("""
@@ -94,7 +79,7 @@ class DBHandler:
                 PRIMARY KEY("id")
                 );
             """)
-            logger.info("Users table created successfully.")
+            logger.info("Users table exists or created successfully.")
 
 
 db_handler = DBHandler("r4DB.db")

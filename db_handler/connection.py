@@ -12,6 +12,7 @@ class SqliteConnection:
 
     def __enter__(self):
         self.connection = sqlite3.connect(self.db_name)
+        self.connection.row_factory = sqlite3.Row  # Enable row access by name
         self.connection.execute("PRAGMA foreign_keys = ON;")
         self.cursor = self.connection.cursor()
         return self.cursor
