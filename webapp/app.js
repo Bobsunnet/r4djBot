@@ -35,12 +35,10 @@ function setCartQuantity(itemId, quantity) {
     const cartIndex = cart.findIndex(c => c.item.id === itemId);
     
     if (quantity <= 0) {
-        // Remove from cart
         if (cartIndex > -1) {
             cart.splice(cartIndex, 1);
         }
     } else {
-        // Add or update
         if (cartIndex > -1) {
             cart[cartIndex].quantity = quantity;
         } else {
@@ -48,15 +46,19 @@ function setCartQuantity(itemId, quantity) {
         }
     }
     
-    updateCartUI();
+    updateCartUI();    
+    renderItemsList(updateFilteredList());
+}
 
-    const filteredItems = searchInput.value ? 
+function updateFilteredList() {
+    const filterString = searchInput.value;
+    const filtered = filterString ? 
         allItems.filter(i => 
-            i.name.toLowerCase().includes(searchInput.value.toLowerCase()) || 
-            i.desc.toLowerCase().includes(searchInput.value.toLowerCase())) : 
+            i.name.toLowerCase().includes(filterString.toLowerCase()) || 
+            i.desc.toLowerCase().includes(filterString.toLowerCase())) : 
         allItems;
     
-    renderItemsList(filteredItems);
+    return filtered;
 }
 
 // Increase quantity
@@ -83,10 +85,11 @@ function increaseInCartAmount(itemId) {
     const cartItem = cart.find(c => c.item.id === itemId);
     const itemQuantityElement = document.getElementById(`cart-qty-${itemId}`);
     if (cartItem.quantity + 1 > cartItem.item.amount) return;
-
+    
     itemQuantityElement.textContent = cartItem.quantity + 1;
     cartItem.quantity += 1;
     updateCartUI();
+    renderItemsList(updateFilteredList());
 }
 
 function decreaseInCartAmount(itemId) {
@@ -96,12 +99,14 @@ function decreaseInCartAmount(itemId) {
         cart.splice(cart.indexOf(cartItem), 1)
         console.log(cart);
         updateCartUI();
+        renderItemsList(updateFilteredList());
         return;
     };
 
     itemQuantityElement.textContent = cartItem.quantity - 1;
     cartItem.quantity -= 1;
     updateCartUI();
+    renderItemsList(updateFilteredList());
 }
 
 // Render items list
@@ -112,7 +117,7 @@ function renderItemsList(items) {
     }
 
     itemsList.innerHTML = items.map(item => {
-        const qty = getCartQuantity(item.id);
+        const quantity = getCartQuantity(item.id);
         return `
         <div class="item-card">
             <div class="item-info">
@@ -120,9 +125,14 @@ function renderItemsList(items) {
                 ${item.desc ? `<div class="item-desc">${escapeHtml(item.desc)}</div>` : ''}
                 <div class="item-price">Available: ${item.amount}</div>
             </div>
-            <div class="quantity-controls">
-                <input type="number" id="qty-${item.id}" value=1 min="1" max="${item.amount}" class="qty-display">
-                <button class="qty-btn" onclick="addToCart(${item.id})">+</button>
+            <div class="quantity-container">
+                <div class="quantity-info">
+                    <span class="quantity-text">Додано: ${escapeHtml(quantity)}</span>
+                </div>
+                <div class="quantity-controls">
+                    <input type="number" id="qty-${item.id}" value=1 min="1" max="${item.amount}" class="qty-display">
+                    <button class="qty-btn" onclick="addToCart(${item.id})">+</button>
+                </div>
             </div>
         </div>
     `;
@@ -168,13 +178,8 @@ function renderCart() {
     `).join('');
 }
 
-searchInput.addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase();
-    const filtered = allItems.filter(item => 
-        item.name.toLowerCase().includes(query) ||
-        (item.desc && item.desc.toLowerCase().includes(query))
-    );
-    renderItemsList(filtered);
+searchInput.addEventListener('input', () => {
+    renderItemsList(updateFilteredList());
 });
 
 
@@ -199,16 +204,12 @@ cartOverlay.addEventListener('click', (e) => {
 tg.MainButton.onClick(() => {
     const orderData = {
         items: cart.map(cartItem => ({
-            id: cartItem.item.id,
             name: cartItem.item.name,
-            price: cartItem.item.price,
             quantity: cartItem.quantity
-        })),
-        total: cart.reduce((sum, c) => sum + (c.item.price * c.quantity), 0)
+        }))
     };
-    console.log(orderData);
     
-    // tg.sendData(JSON.stringify(orderData));
+    tg.sendData(JSON.stringify(orderData));
 });
 
 // Initialize
