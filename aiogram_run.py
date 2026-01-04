@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 async def main():
-    # Include routers
     dp.include_router(start_router)
     dp.include_router(contacts_router)
     dp.include_router(order_router)
