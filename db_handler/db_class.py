@@ -17,22 +17,29 @@ class DBHandler:
     def _get_cursor(self):
         return SqliteConnection(self.db_name)
 
-    def read_all(self, table_name: str = "items"):
+    def read_all(self, table_name: str = "items") -> list:
         """Read all rows from the specified table."""
         with self._get_cursor() as cursor:
             query = f"SELECT * FROM {table_name}"
             cursor.execute(query)
             return cursor.fetchall()
 
-    def read_item_by_id(self, item_id: int):
+    def read_item_by_id(self, item_id: int) -> dict:
         with self._get_cursor() as cursor:
             cursor.execute("SELECT * FROM items WHERE id = ?", (item_id,))
             return cursor.fetchone()
 
-    def create_user(self, user_id: int, username: str, phone: str):
+    def create_user(
+        self, user_id: int, first_name: str, last_name: str, phone_number: str
+    ) -> None:
         with self._get_cursor() as cursor:
-            query = "INSERT INTO users (user_id, username, phone) VALUES (?, ?, ?)"
-            cursor.execute(query, (user_id, username, phone))
+            query = "INSERT INTO users (user_id, first_name, last_name, phone_number) VALUES (?, ?, ?, ?)"
+            cursor.execute(query, (user_id, first_name, last_name, phone_number))
+
+    def read_user_by_user_id(self, user_id: int) -> dict:
+        with self._get_cursor() as cursor:
+            cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
+            return cursor.fetchone()
 
     def update_items_table(self):
         if not self.sync_on:
@@ -74,8 +81,9 @@ class DBHandler:
                 CREATE TABLE IF NOT EXISTS users (
                 "id" INTEGER NOT NULL,
                 "user_id" INTEGER NOT NULL,
-                "username" VARCHAR(128),
-                "phone" VARCHAR(128),
+                "first_name" VARCHAR(128),
+                "last_name" VARCHAR(128),
+                "phone_number" VARCHAR(128),
                 PRIMARY KEY("id")
                 );
             """)
