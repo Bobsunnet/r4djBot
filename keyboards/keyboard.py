@@ -11,7 +11,7 @@ def make_auth_kb():
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="Catalogue"), contacts_button],
-            [KeyboardButton(text="Order", web_app=WebAppInfo(url=WEB_APP_URL))],
+            [KeyboardButton(text="Order")],
         ],
         resize_keyboard=True,
     )
@@ -41,4 +41,16 @@ def make_confirmation_kb():
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
+    )
+
+
+def make_web_app_kb():
+    button = KeyboardButton(
+        text="Обрати з Каталогу", web_app=WebAppInfo(url=WEB_APP_URL)
+    )
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [button],
+        ],
+        resize_keyboard=True,
     )

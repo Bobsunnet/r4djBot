@@ -18,14 +18,31 @@ def test_format_order_message():
     user_full_name = "Бобер Маслов"
     username = "bobermaslov"
     phone_number = "+380999999999"
+    start_date = "01.01.24"
+    end_date = "01.01.24"
+    count = 1
+    address = "Київ"
     items = [{"name": "Speaker", "quantity": 2}, {"name": "Mixer", "quantity": 1}]
 
     expected = (
         "Заказ від Бобер Маслов @bobermaslov\n"
         "+380999999999\n\n"
+        "Початок оренди: 01.01.24\n"
+        "Кінець оренди: 01.01.24\n"
+        "Кількість днів роботи: 1\n"
+        "Адреса доставки/самовивіз: Київ\n\n"
         "• Speaker × 2 шт.\n"
         "• Mixer × 1 шт.\n"
     )
 
-    result = format_order_message(user_full_name, username, phone_number, items)
+    result = format_order_message(
+        user_full_name,
+        username,
+        phone_number,
+        start_date,
+        end_date,
+        count,
+        address,
+        items,
+    )
     assert result == expected
