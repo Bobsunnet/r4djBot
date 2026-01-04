@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message
 
+import config
 from db_handler.db_class import db_handler
 from keyboards import make_auth_kb, make_share_contact_kb
 
@@ -16,6 +17,14 @@ register_router = Router()
 class Registration(StatesGroup):
     name = State()
     phone = State()
+
+
+def is_valid_number(phone_number: str) -> bool:
+    return (
+        phone_number.startswith("+380")
+        and len(phone_number) == 13
+        and phone_number[1:].isdigit()
+    )
 
 
 @register_router.message(F.text.lower() == "register")
@@ -35,9 +44,21 @@ async def registration_name(message: Message, state: FSMContext):
     )
 
 
-@register_router.message(Registration.phone, F.contact)
+@register_router.message(Registration.phone, F.contact | F.text)
 async def registration_phone(message: Message, state: FSMContext):
-    await state.update_data(phone=message.contact.phone_number)
+    if message.contact:
+        await state.update_data(phone=message.contact.phone_number)
+    else:
+        if is_valid_number(message.text):
+            await state.update_data(phone=message.text)
+        else:
+            await state.set_state(Registration.phone)
+            await message.answer(
+                'Не корректний номер телефону. Якщо вже пишите "руками", то пишіть повний формат номеру,'
+                'наприклад: "+380991234567". А краще скористайтеся кнопкою внизу: "Поділитися контактом"'
+            )
+            return
+
     data = await state.get_data()
     try:
         db_handler.create_user(
@@ -54,6 +75,6 @@ async def registration_phone(message: Message, state: FSMContext):
 
     except Exception as e:
         logger.error(f"Error {e}. Failed to register user: {message.from_user}")
-        await message.answer("Помилка реєстрації, спробуйте ще раз")
+        await message.answer(f"Помилка реєстрації, {config.reload_help_message}")
     finally:
         await state.clear()

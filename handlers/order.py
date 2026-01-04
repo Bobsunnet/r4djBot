@@ -15,7 +15,9 @@ order_router = Router()
 logger = logging.getLogger(__name__)
 
 
-failed_to_send_order_message = "Не вдалося обробити ваше замовлення. Спробуйте ще раз, перезавнтаживши бота командою /start"
+failed_to_send_order_message = (
+    f"Не вдалося обробити ваше замовлення. {config.reload_help_message}"
+)
 
 
 class UserNotFound(Exception):
@@ -42,7 +44,7 @@ async def order_start(message: Message, state: FSMContext):
     await state.clear()
     await state.set_state(OrderStates.date)
     await message.answer(
-        "Введіть дати початку і кінця оренди у форматі: dd.mm.yy - dd.mm.yy"
+        "Введіть дати початку і кінця оренди у форматі:\ndd.mm.yy - dd.mm.yy"
     )
 
 
@@ -56,7 +58,7 @@ async def order_date(message: Message, state: FSMContext):
     except ValueError:
         await state.set_state(OrderStates.date)
         await message.answer(
-            "Невірний формат дати. Введіть дати у форматі dd.mm.yy - dd.mm.yy"
+            "Невірний формат дати. Введіть дати у форматі:\ndd.mm.yy - dd.mm.yy"
         )
 
 
