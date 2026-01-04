@@ -9,7 +9,6 @@ from aiogram.types import Message
 from db_handler.db_class import db_handler
 from keyboards import (
     make_auth_kb,
-    make_confirmation_kb,
     make_share_contact_kb,
     make_wo_auth_kb,
 )
@@ -26,11 +25,6 @@ start_router = Router()
 
 
 # --------------- MENU HANDLERS -----------------------------------
-
-
-# @start_router.message()
-# async def unknown_command(message: Message):
-#     await message.answer("Невідома команда")
 
 
 @start_router.message(CommandStart())
