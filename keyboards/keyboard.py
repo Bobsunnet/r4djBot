@@ -3,16 +3,42 @@ from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 WEB_APP_URL = "https://madelaine-precongestive-rossana.ngrok-free.dev"
 
 
-def make_main_kb():
-    buttons = [
-        [KeyboardButton(text="Catalogue"), KeyboardButton(text="Contacts/Help")],
-        [KeyboardButton(text="Order", web_app=WebAppInfo(url=WEB_APP_URL))],
-    ]
+contacts_button = KeyboardButton(text="Contacts/Help")
+register_button = KeyboardButton(text="Register")
 
-    main_keyboard = ReplyKeyboardMarkup(
-        keyboard=buttons,
+
+def make_auth_kb():
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Catalogue"), contacts_button],
+            [KeyboardButton(text="Order", web_app=WebAppInfo(url=WEB_APP_URL))],
+        ],
         resize_keyboard=True,
-        one_time_keyboard=False,
-        input_field_placeholder="Use menu...",
     )
-    return main_keyboard
+
+
+def make_wo_auth_kb():
+    return ReplyKeyboardMarkup(
+        keyboard=[[register_button], [contacts_button]],
+        resize_keyboard=True,
+    )
+
+
+def make_share_contact_kb():
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Поділитися контактом", request_contact=True)],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+def make_confirmation_kb():
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Confirm"), KeyboardButton(text="Cancel")],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )

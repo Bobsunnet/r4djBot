@@ -1,1 +1,6 @@
-from .keyboard import make_main_kb
+from .keyboard import (
+    make_auth_kb,
+    make_confirmation_kb,
+    make_share_contact_kb,
+    make_wo_auth_kb,
+)
