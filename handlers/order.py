@@ -12,6 +12,9 @@ order_router = Router()
 logger = logging.getLogger(__name__)
 
 
+failed_to_send_order_message = "Не вдалося обробити ваше замовлення. Спробуйте ще раз, перезавнтаживши бота командою /start"
+
+
 class UserNotFound(Exception):
     pass
 
@@ -67,8 +70,8 @@ async def handle_web_app_data(message: Message):
             )
 
     except json.JSONDecodeError:
-        await message.answer("Не вдалося обробити ваше замовлення. Спробуйте ще раз.")
+        await message.answer(failed_to_send_order_message)
         logger.error(f"Invalid JSON from web app: {message.web_app_data.data}")
     except Exception as e:
-        await message.answer("Не вдалося обробити ваше замовлення. Спробуйте ще раз.")
+        await message.answer(failed_to_send_order_message)
         logger.error(f"Error handling web app data: {e}")
