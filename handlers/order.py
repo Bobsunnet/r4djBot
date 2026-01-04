@@ -5,16 +5,29 @@ from aiogram import F, Router
 from aiogram.types import Message
 
 import config
+from db_handler.db_class import db_handler
+from utils.utils import format_order_message
 
 order_router = Router()
 logger = logging.getLogger(__name__)
+
+
+class UserNotFound(Exception):
+    pass
+
+
+def get_user_phone_number(user_id: int) -> str:
+    user = db_handler.read_user_by_user_id(user_id)
+    if not user:
+        raise UserNotFound("User not found in database")
+
+    return user["phone_number"]
 
 
 @order_router.message(F.web_app_data)
 async def handle_web_app_data(message: Message):
     """Process order data sent from the Web App."""
     try:
-        # Parse the data from Web App
         data = json.loads(message.web_app_data.data)
         items = data.get("items", [])
 
@@ -24,32 +37,26 @@ async def handle_web_app_data(message: Message):
             await message.answer("Ваш кошик був порожнім. Немає замовлення.")
             return
 
+        phone_number = get_user_phone_number(message.from_user.id)
+
         # Format order message
-        order_text = f"Заказ від {message.from_user.full_name}\n\n"
-        order_text += f"User ID: {message.from_user.id}\n"
-        order_text += f"Username: @{message.from_user.username or 'N/A'}\n\n"
-        order_text += "Items:\n"
-
-        for item in items:
-            quantity = item.get("quantity", 1)
-            order_text += f"• {item['name']} × {quantity} шт.\n"
-
-        # Send confirmation to user
-        await message.answer(
-            "✅ Замовлення прийнято!\n\nЗамовлення було надіслане менеджеру."
+        order_text = format_order_message(
+            user_full_name=message.from_user.full_name,
+            username=message.from_user.username,
+            phone_number=phone_number,
+            items=items,
         )
 
-        # Forward to manager
         try:
             if config.DEBUG:
                 logger.info(f"Order text:\n{order_text}")
-                # await message.bot.send_message(
-                #     chat_id=config.MANAGER_ID, text=order_text
-                # )
             else:
                 await message.bot.send_message(
                     chat_id=config.MANAGER_ID, text=order_text
                 )
+            await message.answer("✅ Замовлення прийнято!")
+            if config.DEBUG:
+                await message.answer(order_text)
 
             logger.info(f"Order from {message.from_user.id} sent to manager")
         except Exception as e:
@@ -60,8 +67,8 @@ async def handle_web_app_data(message: Message):
             )
 
     except json.JSONDecodeError:
-        await message.answer("Failed to process order data. Please try again.")
+        await message.answer("Не вдалося обробити ваше замовлення. Спробуйте ще раз.")
         logger.error(f"Invalid JSON from web app: {message.web_app_data.data}")
     except Exception as e:
-        await message.answer("An error occurred while processing your order.")
+        await message.answer("Не вдалося обробити ваше замовлення. Спробуйте ще раз.")
         logger.error(f"Error handling web app data: {e}")
