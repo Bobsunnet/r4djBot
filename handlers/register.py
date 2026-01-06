@@ -54,7 +54,7 @@ async def registration_phone(message: Message, state: FSMContext):
         else:
             await state.set_state(Registration.phone)
             await message.answer(
-                'Не корректний номер телефону. Якщо вже пишите "руками", то пишіть повний формат номеру,'
+                'Не корректний номер телефону. Якщо вводите "руками", то пишіть повний формат номеру,'
                 'наприклад: "+380991234567". А краще скористайтеся кнопкою внизу: "Поділитися контактом"'
             )
             return
