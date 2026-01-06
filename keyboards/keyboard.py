@@ -44,9 +44,10 @@ def make_confirmation_kb():
     )
 
 
-def make_web_app_kb():
+def make_web_app_kb(work_days: int):
+    url_with_work_days = f"{WEB_APP_URL}?work_days={work_days}"
     button = KeyboardButton(
-        text="Обрати з Каталогу", web_app=WebAppInfo(url=WEB_APP_URL)
+        text="Обрати з Каталогу", web_app=WebAppInfo(url=url_with_work_days)
     )
     return ReplyKeyboardMarkup(
         keyboard=[

@@ -8,6 +8,11 @@ tg.expand();
 let allItems = [];
 let cart = []; // Now stores {item, quantity} objects
 
+// Parse URL Parameters
+
+const urlParams = new URLSearchParams(window.location.search);
+const workDays = parseInt(urlParams.get('work_days'));
+
 // DOM Elements
 const searchInput = document.getElementById('searchInput');
 const itemsList = document.getElementById('itemsList');
@@ -17,9 +22,10 @@ const cartOverlay = document.getElementById('cartOverlay');
 const closeCart = document.getElementById('closeCart');
 const cartItems = document.getElementById('cartItems');
 const cartTotal = document.getElementById('cartTotal');
-
-// Load items from API
-
+const workDaysDisplay = document.getElementById('workDaysDisplay');
+if (workDaysDisplay) {
+    workDaysDisplay.textContent = workDays;
+}
 
 // Get quantity of item in cart
 function getCartQuantity(itemId) {
@@ -144,7 +150,7 @@ function updateCartUI() {
     cartCount.textContent = totalItems;
     
     const total = cart.reduce((sum, c) => sum + (c.item.price * c.quantity), 0);
-    cartTotal.textContent = total;
+    cartTotal.textContent = total*workDays;
 
     // Update Telegram MainButton
     if (cart.length > 0) {
