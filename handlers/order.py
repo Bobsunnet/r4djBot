@@ -8,6 +8,7 @@ from aiogram.types import Message
 
 import config
 from db_handler.db_class import db_handler
+from exceptions import exceptions
 from filters import TextOrCommand
 from keyboards.keyboard import make_auth_kb, make_web_app_kb
 from utils import utils
@@ -21,10 +22,6 @@ failed_to_send_order_message = (
 )
 
 
-class UserNotFound(Exception):
-    pass
-
-
 class OrderStates(StatesGroup):
     date = State()
     work_days = State()
@@ -35,7 +32,7 @@ class OrderStates(StatesGroup):
 def get_user_phone_number(user_id: int) -> str:
     user = db_handler.read_user_by_user_id(user_id)
     if not user:
-        raise UserNotFound("User not found in database")
+        raise exceptions.UserNotFound("User not found in database")
 
     return user["phone_number"]
 
