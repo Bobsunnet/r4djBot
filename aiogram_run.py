@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 
 async def main():
     dp.include_router(start_router)
-    dp.include_router(contacts_router)
-    dp.include_router(order_router)
-    dp.include_router(register_router)
     dp.include_router(help_router)
+    dp.include_router(contacts_router)
+    dp.include_router(register_router)
+    dp.include_router(order_router)
     dp.include_router(unknown_command_router)
 
     await bot.delete_webhook(drop_pending_updates=True)

@@ -1,1 +1,1 @@
-from .custom import custom_filter
+from .custom import TextOrCommand

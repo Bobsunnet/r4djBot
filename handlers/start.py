@@ -5,7 +5,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 
 from db_handler.db_class import db_handler
-from filters import custom_filter
+from filters import TextOrCommand
 from keyboards import (
     make_auth_kb,
     make_wo_auth_kb,
@@ -35,7 +35,7 @@ async def cmd_start(message: Message):
 # ------------------------- F.text hadnlers ------------------------
 
 
-@start_router.message(lambda message: custom_filter(message, "catalogue"))
+@start_router.message(TextOrCommand("catalogue"))
 async def cmd_catalogue(message: Message):
     await message.answer(
         "📄 Каталог обладнання: https://docs.google.com/spreadsheets/d/1ez7Ur5YD0AiTtN2QEWcgZyhlqLGAA6gln0BgTcbBDqM/edit?gid=0#gid=0"
