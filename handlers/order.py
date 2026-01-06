@@ -9,7 +9,7 @@ from aiogram.types import Message
 import config
 from db_handler.db_class import db_handler
 from keyboards.keyboard import make_web_app_kb
-from utils.utils import extract_date, format_order_message
+from utils import utils
 
 order_router = Router()
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ class UserNotFound(Exception):
 
 class OrderStates(StatesGroup):
     date = State()
-    count = State()
+    work_days = State()
     address = State()
     items = State()
 
@@ -50,9 +50,9 @@ async def order_start(message: Message, state: FSMContext):
 
 @order_router.message(OrderStates.date, F.text)
 async def order_date(message: Message, state: FSMContext):
-    await state.set_state(OrderStates.count)
+    await state.set_state(OrderStates.work_days)
     try:
-        start_date, end_date = extract_date(message.text)
+        start_date, end_date = utils.extract_date(message.text)
         await state.update_data({"start_date": start_date, "end_date": end_date})
         await message.answer("Введіть кількість днів роботи одним числом, наприклад: 3")
     except ValueError:
@@ -62,15 +62,15 @@ async def order_date(message: Message, state: FSMContext):
         )
 
 
-@order_router.message(OrderStates.count, F.text)
-async def order_count(message: Message, state: FSMContext):
+@order_router.message(OrderStates.work_days, F.text)
+async def order_work_days(message: Message, state: FSMContext):
     await state.set_state(OrderStates.address)
-    try:
-        count = int(message.text)
-        await state.update_data(count=count)
+    work_days = utils.work_days_validation(message.text)
+    if work_days:
+        await state.update_data(work_days=work_days)
         await message.answer("Введіть адресу доставки/самовивіз зі складу")
-    except ValueError:
-        await state.set_state(OrderStates.count)
+    else:
+        await state.set_state(OrderStates.work_days)
         await message.answer(
             "Невірний формат кількості. Введіть кількість днів роботи одним числом, наприклад: 3"
         )
@@ -80,9 +80,10 @@ async def order_count(message: Message, state: FSMContext):
 async def order_address(message: Message, state: FSMContext):
     await state.set_state(OrderStates.items)
     await state.update_data(address=message.text)
+    data = await state.get_data()
     await message.answer(
         "Оберіть з каталогу обладнання, натиснувши на кнопку знизу",
-        reply_markup=make_web_app_kb(),
+        reply_markup=make_web_app_kb(data["work_days"]),
     )
 
 
@@ -105,10 +106,10 @@ async def order_final(message: Message, state: FSMContext):
         phone_number = get_user_phone_number(message.from_user.id)
 
         # Format order message
-        order_text = format_order_message(
+        order_text = utils.format_order_message(
             start_date=state_data["start_date"],
             end_date=state_data["end_date"],
-            count=state_data["count"],
+            count=state_data["work_days"],
             address=state_data["address"],
             user_full_name=message.from_user.full_name,
             username=message.from_user.username,

@@ -38,3 +38,15 @@ def extract_date(date_str: str) -> tuple[str, str]:
     """
     start_date, end_date = date_str.split("-")
     return start_date.strip(), end_date.strip()
+
+
+def work_days_validation(work_days: str) -> int:
+    try:
+        work_days = int(work_days)
+        if work_days < 1:
+            return 0
+
+    except ValueError:
+        return 0
+
+    return work_days
