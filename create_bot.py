@@ -23,7 +23,6 @@ async def set_commands():
 
 async def on_startup():
     logger.info("Bot is starting...")
-    # await bot.send_message(config.WIFE_CHAT_ID, "Йо, нажми /start")
 
 
 dp.startup.register(on_startup)
