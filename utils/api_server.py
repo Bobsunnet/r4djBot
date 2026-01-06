@@ -21,7 +21,6 @@ def get_items_json():
     return [
         {
             "id": item["id"],
-            "hash": item["hash_code"],
             "name": item["name"],
             "desc": item["desc"],
             "amount": item["amount"],
