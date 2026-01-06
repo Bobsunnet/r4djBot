@@ -17,6 +17,7 @@ dp = Dispatcher(storage=MemoryStorage())
 async def set_commands():
     my_commands = [
         BotCommand(command="start", description="Розпочати роботу"),
+        BotCommand(command="help", description="Інформація про роботу з ботом"),
     ]
     await bot.set_my_commands(commands=my_commands, scope=BotCommandScopeDefault())
 

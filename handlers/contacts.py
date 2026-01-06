@@ -1,5 +1,7 @@
-from aiogram import F, Router
+from aiogram import Router
 from aiogram.types import Message
+
+from filters import custom_filter
 
 contacts_router = Router()
 
@@ -37,6 +39,6 @@ https://maps.app.goo.gl/Qxrg4aTEkYYxN4Ti8
 """
 
 
-@contacts_router.message(F.text.lower() == "contacts/help")
+@contacts_router.message(lambda message: custom_filter(message, "contacts"))
 async def cmd_contacts(message: Message):
     await message.answer(contacts_reply_msg)

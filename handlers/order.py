@@ -8,6 +8,7 @@ from aiogram.types import Message
 
 import config
 from db_handler.db_class import db_handler
+from filters import custom_filter
 from keyboards.keyboard import make_web_app_kb
 from utils import utils
 
@@ -39,7 +40,7 @@ def get_user_phone_number(user_id: int) -> str:
     return user["phone_number"]
 
 
-@order_router.message(F.text.lower() == "order")
+@order_router.message(lambda message: custom_filter(message, "order"))
 async def order_start(message: Message, state: FSMContext):
     await state.clear()
     await state.set_state(OrderStates.date)
