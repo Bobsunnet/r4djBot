@@ -70,21 +70,16 @@ function updateFilteredList() {
 // Increase quantity
 function addToCart(itemId) {
     const item = allItems.find(i => i.id === itemId);
-    if (!item) 
-        return;
-
     const inputField = document.getElementById(`qty-${itemId}`);
-    const addAmount = inputField ? (parseInt(inputField.value) || 0) : 1;
-    if (addAmount <= 0) 
+    const inputValue = parseInt(inputField.value)
+    if (inputValue <= 0) 
         return;
 
-    const currentQty = getCartQuantity(itemId);
-    
-    if (currentQty + addAmount <= item.amount) {
-        setCartQuantity(itemId, currentQty + addAmount);
-        if (inputField) 
-            inputField.value = 0;
+    const inCartQty = getCartQuantity(itemId);
+    if (inCartQty + inputValue <= item.amount) {
+        setCartQuantity(itemId, inCartQty + inputValue);
     }
+    updateAddButton(inputValue, itemId);
 }
 
 function increaseInCartAmount(itemId) {
@@ -103,7 +98,6 @@ function decreaseInCartAmount(itemId) {
     const itemQuantityElement = document.getElementById(`cart-qty-${itemId}`);
     if (cartItem.quantity - 1 < 1) {
         cart.splice(cart.indexOf(cartItem), 1)
-        console.log(cart);
         updateCartUI();
         renderItemsList(updateFilteredList());
         return;
@@ -137,7 +131,7 @@ function renderItemsList(items) {
                 </div>
                 <div class="quantity-controls">
                     <input type="number" id="qty-${item.id}" value=1 min="1" max="${item.amount}" class="qty-display">
-                    <button class="qty-btn" onclick="addToCart(${item.id})">+</button>
+                    <button class="qty-btn" id="qty-btn-${item.id}" onclick="addToCart(${item.id})" ${((quantity + 1) > item.amount) ? 'disabled' : ''}>+</button>
                 </div>
             </div>
         </div>
@@ -183,6 +177,24 @@ function renderCart() {
         </div>
     `).join('');
 }
+
+function updateAddButton(value, itemId) {
+    const item_amount = allItems.find(i => i.id == itemId).amount;
+    value = parseInt(value);
+    const addButton = document.getElementById(`qty-btn-${itemId}`);
+    const inCartAmount = getCartQuantity(itemId);
+
+    if ((value < 1) || (value > item_amount) || (value + inCartAmount > item_amount)) {
+        addButton.disabled = true;
+    } else {
+        addButton.disabled = false;
+    }
+}
+
+itemsList.addEventListener('input', (e) => {
+    updateAddButton(parseInt(e.target.value), parseInt(e.target.id.split('-')[1]));
+})
+
 
 searchInput.addEventListener('input', () => {
     renderItemsList(updateFilteredList());
