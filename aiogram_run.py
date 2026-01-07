@@ -10,6 +10,7 @@ from handlers import (
     start_router,
     unknown_command_router,
 )
+from schedulers.schedulers import scheduler_setup
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,8 @@ async def main():
 
     async def run_web_server():
         await start_server(host="0.0.0.0", port=8080)
+
+    scheduler_setup()
 
     await asyncio.gather(run_web_server(), run_bot())
 
