@@ -8,6 +8,7 @@ from aiogram.types import Message
 import config
 from db_handler.db_class import db_handler
 from keyboards import make_auth_kb, make_share_contact_kb
+from utils.utils import is_valid_number
 
 logger = logging.getLogger(__name__)
 
@@ -17,14 +18,6 @@ register_router = Router()
 class Registration(StatesGroup):
     name = State()
     phone = State()
-
-
-def is_valid_number(phone_number: str) -> bool:
-    return (
-        phone_number.startswith("+380")
-        and len(phone_number) == 13
-        and phone_number[1:].isdigit()
-    )
 
 
 @register_router.message(F.text.lower() == "register")

@@ -50,3 +50,11 @@ def work_days_validation(work_days: str) -> int:
         return 0
 
     return work_days
+
+
+def is_valid_number(phone_number: str) -> bool:
+    return (
+        phone_number.startswith("+380")
+        and len(phone_number) == 13
+        and phone_number[1:].isdigit()
+    )
