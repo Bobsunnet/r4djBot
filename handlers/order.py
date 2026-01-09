@@ -27,6 +27,7 @@ class OrderStates(StatesGroup):
     work_days = State()
     address = State()
     items = State()
+    comment = State()
 
 
 def get_user_phone_number(user_id: int) -> str:
@@ -51,6 +52,13 @@ async def order_date(message: Message, state: FSMContext):
     await state.set_state(OrderStates.work_days)
     try:
         start_date, end_date = utils.extract_date(message.text)
+        if not utils.validate_date(start_date) or not utils.validate_date(end_date):
+            await state.set_state(OrderStates.date)
+            await message.answer(
+                "Вказано неіснуючу дату. Введіть дати у форматі:\ndd.mm.yy - dd.mm.yy"
+            )
+            return
+
         await state.update_data({"start_date": start_date, "end_date": end_date})
         await message.answer("Введіть кількість днів роботи одним числом, наприклад: 3")
     except ValueError:
@@ -65,6 +73,14 @@ async def order_work_days(message: Message, state: FSMContext):
     await state.set_state(OrderStates.address)
     work_days = utils.work_days_validation(message.text)
     if work_days:
+        if work_days > 365:
+            await state.clear()
+            await message.answer(
+                "Здається ви плануєте оренду більше 365 днів. Зв’яжіться з менеджером напряму",
+                reply_markup=make_auth_kb(),
+            )
+            return
+
         await state.update_data(work_days=work_days)
         await message.answer("Введіть адресу доставки/самовивіз зі складу")
     else:
@@ -76,8 +92,15 @@ async def order_work_days(message: Message, state: FSMContext):
 
 @order_router.message(OrderStates.address, F.text)
 async def order_address(message: Message, state: FSMContext):
-    await state.set_state(OrderStates.items)
+    await state.set_state(OrderStates.comment)
     await state.update_data(address=message.text)
+    await message.answer("Введіть коментар до замовлення")
+
+
+@order_router.message(OrderStates.comment, F.text)
+async def order_comment(message: Message, state: FSMContext):
+    await state.set_state(OrderStates.items)
+    await state.update_data(comment=message.text)
     data = await state.get_data()
     await message.answer(
         "Оберіть з каталогу обладнання, натиснувши на кнопку знизу",
@@ -105,6 +128,7 @@ async def order_final(message: Message, state: FSMContext):
             end_date=state_data["end_date"],
             count=state_data["work_days"],
             address=state_data["address"],
+            comment=state_data["comment"],
             user_full_name=message.from_user.full_name,
             username=message.from_user.username,
             phone_number=phone_number,

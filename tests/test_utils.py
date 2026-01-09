@@ -1,4 +1,4 @@
-from utils.utils import format_order_message, format_welcome_message
+from utils import utils
 
 
 def test_format_welcome_message():
@@ -6,8 +6,10 @@ def test_format_welcome_message():
     Test that the welcome message is formatted correctly with the given name.
     """
     name = "Олександр"
-    expected = "Вітаємо, Олександр. Оберіть одну з команд:"
-    result = format_welcome_message(name)
+    expected = (
+        "Вітаємо, Олександр. Оберіть одну з команд /catalogue, /contacts, /order:"
+    )
+    result = utils.format_welcome_message(name)
     assert result == expected
 
 
@@ -23,6 +25,7 @@ def test_format_order_message():
     count = 1
     address = "Київ"
     items = [{"name": "Speaker", "quantity": 2}, {"name": "Mixer", "quantity": 1}]
+    comment = "comment text"
 
     expected = (
         "Заказ від Бобер Маслов @bobermaslov\n"
@@ -31,11 +34,12 @@ def test_format_order_message():
         "Кінець оренди: 01.01.24\n"
         "Кількість днів роботи: 1\n"
         "Адреса доставки/самовивіз: Київ\n\n"
+        "Коментар: comment text\n\n"
         "• Speaker × 2 шт.\n"
         "• Mixer × 1 шт.\n"
     )
 
-    result = format_order_message(
+    result = utils.format_order_message(
         user_full_name,
         username,
         phone_number,
@@ -43,6 +47,27 @@ def test_format_order_message():
         end_date,
         count,
         address,
+        comment,
         items,
     )
+    assert result == expected
+
+
+def test_extract_date():
+    """
+    Test that the extract_date function correctly extracts the start and end dates from a date string.
+    """
+    date_str = "01.01.24 - 01.01.24"
+    expected = ("01.01.24", "01.01.24")
+    result = utils.extract_date(date_str)
+    assert result == expected
+
+
+def test_validate_date():
+    """
+    Test that the validate_date function correctly validates a date string.
+    """
+    date_str = "01.01.24"
+    expected = True
+    result = utils.validate_date(date_str)
     assert result == expected

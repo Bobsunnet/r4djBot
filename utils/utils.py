@@ -1,3 +1,6 @@
+from datetime import datetime
+
+
 def format_welcome_message(name: str) -> str:
     """
     Formats the welcome message for the user.
@@ -13,6 +16,7 @@ def format_order_message(
     end_date: str,
     count: int,
     address: str,
+    comment: str,
     items: list,
 ) -> str:
     """
@@ -24,7 +28,7 @@ def format_order_message(
     order_text += f"Кінець оренди: {end_date}\n"
     order_text += f"Кількість днів роботи: {count}\n"
     order_text += f"Адреса доставки/самовивіз: {address}\n\n"
-
+    order_text += f"Коментар: {comment}\n\n"
     for item in items:
         quantity = item.get("quantity", 1)
         order_text += f"• {item['name']} × {quantity} шт.\n"
@@ -58,3 +62,16 @@ def is_valid_number(phone_number: str) -> bool:
         and len(phone_number) == 13
         and phone_number[1:].isdigit()
     )
+
+
+def validate_date(date_str: str) -> bool:
+    """validate date string in format some general formats"""
+    formats = ["%d.%m.%y", "%d.%m.%Y", "%d-%m-%y", "%d-%m-%Y"]
+
+    for format in formats:
+        try:
+            datetime.strptime(date_str, format)
+            return True
+        except ValueError:
+            pass
+    return False
