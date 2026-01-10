@@ -21,6 +21,8 @@ failed_to_send_order_message = (
     f"Не вдалося обробити ваше замовлення. {config.reload_help_message}"
 )
 
+date_format_message = "\ndd.mm.yy - dd.mm.yy\n(день.місяць.рік)"
+
 
 class OrderStates(StatesGroup):
     date = State()
@@ -43,7 +45,7 @@ async def order_start(message: Message, state: FSMContext):
     await state.clear()
     await state.set_state(OrderStates.date)
     await message.answer(
-        "Введіть дати початку і кінця оренди у форматі:\ndd.mm.yy - dd.mm.yy"
+        f"Введіть дати отримання і повернення обладнання у форматі:{date_format_message}"
     )
 
 
@@ -55,7 +57,7 @@ async def order_date(message: Message, state: FSMContext):
         if not utils.validate_date(start_date) or not utils.validate_date(end_date):
             await state.set_state(OrderStates.date)
             await message.answer(
-                "Вказано неіснуючу дату. Введіть дати у форматі:\ndd.mm.yy - dd.mm.yy"
+                f"Вказано неіснуючу дату. Введіть дати у форматі:{date_format_message}"
             )
             return
 
@@ -64,7 +66,7 @@ async def order_date(message: Message, state: FSMContext):
     except ValueError:
         await state.set_state(OrderStates.date)
         await message.answer(
-            "Невірний формат дати. Введіть дати у форматі:\ndd.mm.yy - dd.mm.yy"
+            f"Невірний формат дати. Введіть дати у форматі:{date_format_message}"
         )
 
 
@@ -82,7 +84,9 @@ async def order_work_days(message: Message, state: FSMContext):
             return
 
         await state.update_data(work_days=work_days)
-        await message.answer("Введіть адресу доставки/самовивіз зі складу")
+        await message.answer(
+            "Введіть адресу та час доставки\nАбо час самовивозу зі складу (м. Київ, Здолбунівська 2)"
+        )
     else:
         await state.set_state(OrderStates.work_days)
         await message.answer(
@@ -118,7 +122,7 @@ async def order_final(message: Message, state: FSMContext):
         items = web_app_data.get("items", [])
         logger.info(f"ORDER FROM {message.from_user.id} received: {items}")
         if not items:
-            reply_message = "Ви не вибрали жодного товару"
+            user_reply_message = "Ви не вибрали жодного товару"
             return
         phone_number = get_user_phone_number(message.from_user.id)
 
@@ -142,19 +146,19 @@ async def order_final(message: Message, state: FSMContext):
                 await message.bot.send_message(
                     chat_id=config.MANAGER_ID, text=order_text
                 )
-            reply_message = "✅ Замовлення прийнято!" + "\n" + order_text
+            user_reply_message = "✅ Замовлення прийнято!" + "\n\n" + order_text
 
             logger.info(f"Order from {message.from_user.id} sent to manager")
         except Exception as e:
             logger.error(f"Failed to send order to manager: {e}")
-            reply_message = "Замовлення прийнято, але не було надіслане менеджеру. Зверніться до менеджера."
+            user_reply_message = "Замовлення прийнято, але не було надіслане менеджеру. Зверніться до менеджера."
 
     except json.JSONDecodeError:
-        reply_message = failed_to_send_order_message
+        user_reply_message = failed_to_send_order_message
         logger.error(f"Invalid JSON from web app: {message.web_app_data.data}")
     except Exception as e:
-        reply_message = failed_to_send_order_message
+        user_reply_message = failed_to_send_order_message
         logger.error(f"Error handling web app data: {e}")
     finally:
         await state.clear()
-        await message.answer(reply_message, reply_markup=make_auth_kb())
+        await message.answer(user_reply_message, reply_markup=make_auth_kb())

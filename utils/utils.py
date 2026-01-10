@@ -22,12 +22,12 @@ def format_order_message(
     """
     Formats the order message with user details and items.
     """
-    order_text = f"Заказ від {user_full_name} @{username or 'N/A'}\n"
+    order_text = f"Замовлення від {user_full_name} @{username or 'N/A'}\n"
     order_text += f"{phone_number or 'N/A'}\n\n"
     order_text += f"Початок оренди: {start_date}\n"
     order_text += f"Кінець оренди: {end_date}\n"
     order_text += f"Кількість днів роботи: {count}\n"
-    order_text += f"Адреса доставки/самовивіз: {address}\n\n"
+    order_text += f"Адреса та час доставки/самовивіз: {address}\n\n"
     order_text += f"Коментар: {comment}\n\n"
     for item in items:
         quantity = item.get("quantity", 1)
