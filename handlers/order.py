@@ -146,12 +146,14 @@ async def order_final(message: Message, state: FSMContext):
                 await message.bot.send_message(
                     chat_id=config.MANAGER_ID, text=order_text
                 )
-            user_reply_message = "✅ Замовлення прийнято!" + "\n\n" + order_text
+            user_reply_message = "✅ Замовлення прийнято!\n" + "\n".join(
+                order_text.split("\n")[2:]
+            )
 
             logger.info(f"Order from {message.from_user.id} sent to manager")
         except Exception as e:
             logger.error(f"Failed to send order to manager: {e}")
-            user_reply_message = "Замовлення прийнято, але не було надіслане менеджеру. Зверніться до менеджера."
+            user_reply_message = "✅ Замовлення прийнято, але не було надіслане менеджеру. Зверніться до менеджера."
 
     except json.JSONDecodeError:
         user_reply_message = failed_to_send_order_message
