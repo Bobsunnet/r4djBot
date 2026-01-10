@@ -15,6 +15,7 @@ WEB_APP_URL = os.getenv("WEB_APP_URL")
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1")
 SYNC_DB = os.getenv("SYNC_DB", "False").lower() in ("true", "1")
 LOG_DIR = BASE_DIR / "logs"
+SYNC_DB_INTERVAL = int(os.getenv("SYNC_DB_INTERVAL", "False"))
 
 # Business Logic
 PRICE_MULTIPLIER = 0.5
