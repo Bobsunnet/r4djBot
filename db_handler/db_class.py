@@ -1,5 +1,7 @@
 import logging
 
+from config import SYNC_DB
+
 from .api_calls import get_prices_data
 from .connection import SqliteConnection
 
@@ -7,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class DBHandler:
-    sync_on = False
+    sync_on = SYNC_DB
 
     def __init__(self, db_name: str):
         self.db_name = db_name
