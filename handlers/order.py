@@ -140,12 +140,7 @@ async def order_final(message: Message, state: FSMContext):
         )
 
         try:
-            if config.DEBUG:
-                logger.info(f"Order text:\n{order_text}")
-            else:
-                await message.bot.send_message(
-                    chat_id=config.MANAGER_ID, text=order_text
-                )
+            await message.bot.send_message(chat_id=config.MANAGER_ID, text=order_text)
             user_reply_message = "✅ Замовлення прийнято!\n" + "\n".join(
                 order_text.split("\n")[2:]
             )
