@@ -1,7 +1,6 @@
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 
-WEB_APP_URL = "https://madelaine-precongestive-rossana.ngrok-free.dev"
-
+from config import WEB_APP_URL
 
 contacts_button = KeyboardButton(text="Contacts")
 register_button = KeyboardButton(text="Register")

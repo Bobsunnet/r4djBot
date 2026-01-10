@@ -11,7 +11,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 MANAGER_ID = int(os.getenv("MANAGER_ID", "0"))
 WIFE_ID = int(os.getenv("WIFE_ID", "0"))
 VADOS_ID = int(os.getenv("VADOS_ID", "0"))
-
+WEB_APP_URL = os.getenv("WEB_APP_URL")
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1")
 
 LOG_DIR = BASE_DIR / "logs"
