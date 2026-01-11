@@ -7,21 +7,15 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message
 
 import config
-from db_handler.db_class import db_handler
 from exceptions import exceptions
 from filters import TextOrCommand
-from keyboards.keyboard import make_auth_kb, make_web_app_kb
+from keyboards.keyboard import make_auth_kb, make_web_app_kb, make_wo_auth_kb
+from utils import messages as ms
 from utils import utils
+from utils.db_utils import get_authorized_user, get_user_phone_number
 
 order_router = Router()
 logger = logging.getLogger(__name__)
-
-
-failed_to_send_order_message = (
-    f"Не вдалося обробити ваше замовлення. {config.reload_help_message}"
-)
-
-date_format_message = "\ndd.mm.yy - dd.mm.yy\n(день.місяць.рік)"
 
 
 class OrderStates(StatesGroup):
@@ -32,20 +26,19 @@ class OrderStates(StatesGroup):
     comment = State()
 
 
-def get_user_phone_number(user_id: int) -> str:
-    user = db_handler.read_user_by_user_id(user_id)
-    if not user:
-        raise exceptions.UserNotFound("User not found in database")
-
-    return user["phone_number"]
-
-
 @order_router.message(TextOrCommand("order"))
 async def order_start(message: Message, state: FSMContext):
+    user = get_authorized_user(message.from_user.id)
+    if not user:
+        await message.answer(
+            ms.not_authorized_message,
+            reply_markup=make_wo_auth_kb(),
+        )
+        return
     await state.clear()
     await state.set_state(OrderStates.date)
     await message.answer(
-        f"Введіть дати отримання і повернення обладнання у форматі:{date_format_message}"
+        f"Введіть дати отримання і повернення обладнання у форматі:{ms.date_format_message}"
     )
 
 
@@ -57,7 +50,7 @@ async def order_date(message: Message, state: FSMContext):
         if not utils.validate_date(start_date) or not utils.validate_date(end_date):
             await state.set_state(OrderStates.date)
             await message.answer(
-                f"Вказано неіснуючу дату. Введіть дати у форматі:{date_format_message}"
+                f"Вказано неіснуючу дату. Введіть дати у форматі:{ms.date_format_message}"
             )
             return
 
@@ -66,7 +59,7 @@ async def order_date(message: Message, state: FSMContext):
     except ValueError:
         await state.set_state(OrderStates.date)
         await message.answer(
-            f"Невірний формат дати. Введіть дати у форматі:{date_format_message}"
+            f"Невірний формат дати. Введіть дати у форматі:{ms.date_format_message}"
         )
 
 
@@ -141,20 +134,28 @@ async def order_final(message: Message, state: FSMContext):
 
         try:
             await message.bot.send_message(chat_id=config.MANAGER_ID, text=order_text)
-            user_reply_message = "✅ Замовлення прийнято!\n" + "\n".join(
-                order_text.split("\n")[2:]
+            user_reply_message = (
+                ms.order_processing_message
+                + "\n"
+                + "\n".join(order_text.split("\n")[2:])
             )
 
             logger.info(f"Order from {message.from_user.id} sent to manager")
         except Exception as e:
             logger.error(f"Failed to send order to manager: {e}")
-            user_reply_message = "✅ Замовлення прийнято, але не було надіслане менеджеру. Зверніться до менеджера."
+            user_reply_message = (
+                ms.order_processing_message
+                + " але не було надіслане менеджеру. Зверніться до менеджера."
+            )
 
     except json.JSONDecodeError:
-        user_reply_message = failed_to_send_order_message
+        user_reply_message = ms.failed_to_send_order_message
         logger.error(f"Invalid JSON from web app: {message.web_app_data.data}")
+    except exceptions.UserNotFound:
+        user_reply_message = ms.not_authorized_message + ms.failed_to_send_order_message
+        logger.error(f"User not found in database: {message.from_user.id}")
     except Exception as e:
-        user_reply_message = failed_to_send_order_message
+        user_reply_message = ms.failed_to_send_order_message
         logger.error(f"Error handling web app data: {e}")
     finally:
         await state.clear()
