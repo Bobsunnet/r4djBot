@@ -60,7 +60,7 @@ async def handle_api_items(request):
         return web.json_response({"error": "Failed to fetch items"}, status=500)
 
 
-async def start_server(host="0.0.0.0", port=8080):
+async def start_server(host="127.0.0.1", port=8000):
     """Start the aiohttp web server."""
     app = web.Application()
 
