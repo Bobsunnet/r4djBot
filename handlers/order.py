@@ -12,7 +12,7 @@ from filters import TextOrCommand
 from keyboards.keyboard import make_auth_kb, make_web_app_kb, make_wo_auth_kb
 from utils import messages as ms
 from utils import utils
-from utils.db_utils import get_authorized_user, get_user_phone_number
+from utils.db_utils import get_authorized_user
 
 order_router = Router()
 logger = logging.getLogger(__name__)
@@ -117,7 +117,8 @@ async def order_final(message: Message, state: FSMContext):
         if not items:
             user_reply_message = "Ви не вибрали жодного товару"
             return
-        phone_number = get_user_phone_number(message.from_user.id)
+        user = get_authorized_user(message.from_user.id)
+        logger.info(f"User: {user}")
 
         # Format order message
         order_text = utils.format_order_message(
@@ -126,9 +127,10 @@ async def order_final(message: Message, state: FSMContext):
             count=state_data["work_days"],
             address=state_data["address"],
             comment=state_data["comment"],
-            user_full_name=message.from_user.full_name,
+            name=user["name"],
+            surname=user["surname"],
             username=message.from_user.username,
-            phone_number=phone_number,
+            phone_number=user["phone_number"],
             items=items,
         )
 
@@ -136,7 +138,7 @@ async def order_final(message: Message, state: FSMContext):
             await message.bot.send_message(chat_id=config.MANAGER_ID, text=order_text)
             user_reply_message = (
                 ms.order_processing_message
-                + "\n"
+                + ". Менеджер зв'яжеться з вами для підтвердження\n"
                 + "\n".join(order_text.split("\n")[2:])
             )
 

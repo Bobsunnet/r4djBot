@@ -17,7 +17,8 @@ def test_format_order_message():
     """
     Test that the order message is formatted correctly with items.
     """
-    user_full_name = "Бобер Маслов"
+    name = "Бобер"
+    surname = "Маслов"
     username = "bobermaslov"
     phone_number = "+380999999999"
     start_date = "01.01.24"
@@ -40,7 +41,8 @@ def test_format_order_message():
     )
 
     result = utils.format_order_message(
-        user_full_name,
+        name,
+        surname,
         username,
         phone_number,
         start_date,
