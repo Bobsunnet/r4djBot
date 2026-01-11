@@ -1,15 +1,16 @@
 import logging
 
-from aiogram import F, Router
+from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
-from db_handler.db_class import db_handler
 from filters import TextOrCommand
 from keyboards import (
     make_auth_kb,
     make_wo_auth_kb,
 )
+from utils import messages as ms
+from utils.db_utils import get_authorized_user
 from utils.utils import format_welcome_message
 
 logger = logging.getLogger(__name__)
@@ -23,12 +24,12 @@ start_router = Router()
 
 @start_router.message(CommandStart())
 async def cmd_start(message: Message):
-    user = db_handler.read_user_by_user_id(message.from_user.id)
+    user = get_authorized_user(message.from_user.id)
     if user:
         reply_text = format_welcome_message(user["name"])
         await message.answer(reply_text, reply_markup=make_auth_kb())
     else:
-        reply_text = "Вітаємо. На жаль, ви ще не зареєстровані в системі. Пройдіть швидку реєстрацію."
+        reply_text = "Вітаємо. " + ms.not_authorized_message
         await message.answer(reply_text, reply_markup=make_wo_auth_kb())
 
 
