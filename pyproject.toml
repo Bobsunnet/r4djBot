@@ -1,6 +1,6 @@
 [project]
 name = "r4djBot"
-version = "1.0.0"  
+version = "1.1.0"  
 description = "telegram bot for rent4dj company"
 
 
