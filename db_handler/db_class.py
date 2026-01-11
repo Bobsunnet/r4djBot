@@ -35,13 +35,19 @@ class DBHandler:
         self,
         user_id: int,
         name: str,
+        surname: str,
         first_name: str,
         last_name: str,
         phone_number: str,
     ) -> None:
         with self._get_cursor() as cursor:
-            query = "INSERT INTO users (user_id, name, first_name, last_name, phone_number) VALUES (?, ?, ?, ?, ?)"
-            cursor.execute(query, (user_id, name, first_name, last_name, phone_number))
+            query = """INSERT INTO 
+            users (user_id, name,surname, first_name, last_name, phone_number) 
+            VALUES (?, ?, ?, ?, ?, ?);
+            """
+            cursor.execute(
+                query, (user_id, name, surname, first_name, last_name, phone_number)
+            )
 
     def read_user_by_user_id(self, user_id: int) -> dict:
         with self._get_cursor() as cursor:
@@ -61,7 +67,7 @@ class DBHandler:
                     cursor.execute(
                         """
                         INSERT INTO items (hash_code, name, desc, amount, price)
-                        VALUES (?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?);
                     """,
                         (item[0], item[1], item[2], int(item[3]), int(item[4])),
                     )
@@ -87,11 +93,12 @@ class DBHandler:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                 "id" INTEGER NOT NULL,
-                "name" VARCHAR(256),
+                "name" VARCHAR(128),
+                "surname" VARCHAR(128),
                 "user_id" INTEGER NOT NULL,
-                "first_name" VARCHAR(128),
-                "last_name" VARCHAR(128),
-                "phone_number" VARCHAR(64),
+                "first_name" VARCHAR(256),
+                "last_name" VARCHAR(256),
+                "phone_number" VARCHAR(32),
                 PRIMARY KEY("id")
                 );
             """)
