@@ -1,4 +1,17 @@
+import re
 from datetime import datetime
+
+
+def validate_name(name: str) -> bool:
+    """
+    Validates if the name/surname contains only letters, spaces, or hyphens.
+    Length should be between 2 and 50 characters.
+    """
+    if not (2 <= len(name) <= 50):
+        return False
+    # Allows Cyrillic, Latin, spaces, and hyphens
+    pattern = r"^[a-zA-Zа-яА-ЯёЁіІїЇєЄґҐ’'`\s-]+$"
+    return bool(re.match(pattern, name))
 
 
 def format_welcome_message(name: str) -> str:

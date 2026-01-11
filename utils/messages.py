@@ -8,6 +8,7 @@ order_processing_message = "✅Ваше замовлення прийнято"
 
 enter_name_message = "Введіть ваше Ім’я."
 enter_surname_message = "Введіть ваше Прізвище."
+invalid_name_message = "Некоректне значення. Використовуйте лише літери."
 
 
 failed_to_send_order_message = (

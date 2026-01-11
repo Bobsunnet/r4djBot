@@ -8,7 +8,7 @@ from aiogram.types import Message
 from db_handler.db_class import db_handler
 from keyboards import make_auth_kb, make_share_contact_kb
 from utils import messages as ms
-from utils.utils import is_valid_number
+from utils.utils import is_valid_number, validate_name
 
 logger = logging.getLogger(__name__)
 
@@ -30,22 +30,24 @@ async def start_registration(message: Message, state: FSMContext):
 
 @register_router.message(Registration.name, F.text)
 async def registration_name(message: Message, state: FSMContext):
-    if len(message.text) < 2:
-        await message.answer(ms.enter_name_message)
+    name = message.text.strip()
+    if not validate_name(name):
+        await message.answer(ms.invalid_name_message)
         return
 
-    await state.update_data(name=message.text)
+    await state.update_data(name=name)
     await state.set_state(Registration.surname)
     await message.answer(ms.enter_surname_message)
 
 
 @register_router.message(Registration.surname, F.text)
 async def registration_surname(message: Message, state: FSMContext):
-    if len(message.text) < 2:
-        await message.answer(ms.enter_surname_message)
+    surname = message.text.strip()
+    if not validate_name(surname):
+        await message.answer(ms.invalid_name_message)
         return
 
-    await state.update_data(surname=message.text)
+    await state.update_data(surname=surname)
     await state.set_state(Registration.phone)
     await message.answer(
         "Поділіться вашим номером телефону, натиснувши кнопку внизу. Це необхідно для зворотнього зв'язку з вами.",
