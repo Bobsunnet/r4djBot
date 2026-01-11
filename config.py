@@ -19,5 +19,3 @@ SYNC_DB_INTERVAL = int(os.getenv("SYNC_DB_INTERVAL", "False"))
 
 # Business Logic
 PRICE_MULTIPLIER = 0.5
-
-reload_help_message = "Спробуйте ще раз, перезавнтаживши бота командою /start"
