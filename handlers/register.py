@@ -5,9 +5,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message
 
-import config
 from db_handler.db_class import db_handler
 from keyboards import make_auth_kb, make_share_contact_kb
+from utils import messages as ms
 from utils.utils import is_valid_number
 
 logger = logging.getLogger(__name__)
@@ -17,6 +17,7 @@ register_router = Router()
 
 class Registration(StatesGroup):
     name = State()
+    surname = State()
     phone = State()
 
 
@@ -24,12 +25,27 @@ class Registration(StatesGroup):
 async def start_registration(message: Message, state: FSMContext):
     await state.clear()
     await state.set_state(Registration.name)
-    await message.answer("Введіть ваше ім'я")
+    await message.answer(ms.enter_name_message)
 
 
 @register_router.message(Registration.name, F.text)
 async def registration_name(message: Message, state: FSMContext):
+    if len(message.text) < 2:
+        await message.answer(ms.enter_name_message)
+        return
+
     await state.update_data(name=message.text)
+    await state.set_state(Registration.surname)
+    await message.answer(ms.enter_surname_message)
+
+
+@register_router.message(Registration.surname, F.text)
+async def registration_surname(message: Message, state: FSMContext):
+    if len(message.text) < 2:
+        await message.answer(ms.enter_surname_message)
+        return
+
+    await state.update_data(surname=message.text)
     await state.set_state(Registration.phone)
     await message.answer(
         "Поділіться вашим номером телефону, натиснувши кнопку внизу. Це необхідно для зворотнього зв'язку з вами.",
@@ -57,6 +73,7 @@ async def registration_phone(message: Message, state: FSMContext):
         db_handler.create_user(
             user_id=message.from_user.id,
             name=data["name"],
+            surname=data["surname"],
             first_name=message.from_user.first_name,
             last_name=message.from_user.last_name,
             phone_number=data["phone"],
@@ -68,6 +85,6 @@ async def registration_phone(message: Message, state: FSMContext):
 
     except Exception as e:
         logger.error(f"Error {e}. Failed to register user: {message.from_user}")
-        await message.answer(f"Помилка реєстрації, {config.reload_help_message}")
+        await message.answer(f"Помилка реєстрації, {ms.reload_help_message}")
     finally:
         await state.clear()
