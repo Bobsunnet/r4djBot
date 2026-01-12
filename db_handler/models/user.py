@@ -9,9 +9,9 @@ class User(Base):
 
     name: Mapped[str] = mapped_column(String(128))
     surname: Mapped[str] = mapped_column(String(128))
+    user_id: Mapped[int] = mapped_column(unique=True)
     first_name: Mapped[str] = mapped_column(String(256))
     last_name: Mapped[str] = mapped_column(String(256), nullable=True)
-    user_id: Mapped[int] = mapped_column(unique=True)
     phone_number: Mapped[str] = mapped_column(String(32))
 
     def __repr__(self):
