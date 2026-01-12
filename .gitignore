@@ -218,3 +218,4 @@ __marimo__/
 .vscode/
 r4DB.db
 docs/
+sandbox_run.py

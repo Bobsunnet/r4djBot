@@ -3,7 +3,8 @@ from pathlib import Path
 
 from aiohttp import web
 
-from db_handler.db_class import db_handler
+from db_handler.crud import get_items
+from db_handler.models.db_helper import db_helper
 
 logger = logging.getLogger(__name__)
 
@@ -13,21 +14,23 @@ WEBAPP_DIR = Path(__file__).parent.parent / "webapp"
 router = web.RouteTableDef()
 
 
-def get_items_json():
+async def get_items_json():
     """Return all items formatted for the WebApp JSON API."""
     from config import settings
 
-    items = db_handler.read_all("items")
-    return [
-        {
-            "id": item["id"],
-            "name": item["name"],
-            "desc": item["desc"],
-            "amount": item["amount"],
-            "price": item["price"] * settings.price_multiplier,
-        }
-        for item in items
-    ]
+    async with db_helper.session_getter() as session:
+        items = await get_items(session=session)
+
+        return [
+            {
+                "id": item.id,
+                "name": item.name,
+                "desc": item.desc,
+                "amount": item.amount,
+                "price": item.price * settings.price_multiplier,
+            }
+            for item in items
+        ]
 
 
 @router.get("/")
@@ -53,7 +56,7 @@ async def handle_static(request):
 async def handle_api_items(request):
     """Return all items as JSON."""
     try:
-        items = get_items_json()
+        items = await get_items_json()
         return web.json_response({"items": items})
     except Exception as e:
         logger.error(f"Error fetching items: {e}")

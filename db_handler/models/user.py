@@ -1,0 +1,18 @@
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from db_handler.models.base import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    name: Mapped[str] = mapped_column(String(128))
+    surname: Mapped[str] = mapped_column(String(128))
+    first_name: Mapped[str] = mapped_column(String(256))
+    last_name: Mapped[str] = mapped_column(String(256), nullable=True)
+    user_id: Mapped[int] = mapped_column(unique=True)
+    phone_number: Mapped[str] = mapped_column(String(32))
+
+    def __repr__(self):
+        return f"User(id={self.id}, name={self.name}, surname={self.surname}, first_name={self.first_name}, user_id={self.user_id}, phone_number={self.phone_number})"
