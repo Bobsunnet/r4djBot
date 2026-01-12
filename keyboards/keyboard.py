@@ -1,6 +1,6 @@
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 
-from config import WEB_APP_URL
+from config import settings
 
 contacts_button = KeyboardButton(text="Contacts")
 register_button = KeyboardButton(text="Register")
@@ -44,7 +44,7 @@ def make_confirmation_kb():
 
 
 def make_web_app_kb(work_days: int):
-    url_with_work_days = f"{WEB_APP_URL}?work_days={work_days}"
+    url_with_work_days = f"{settings.web_app_url}?work_days={work_days}"
     button = KeyboardButton(
         text="Обрати з Каталогу", web_app=WebAppInfo(url=url_with_work_days)
     )

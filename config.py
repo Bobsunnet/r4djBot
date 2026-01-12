@@ -2,20 +2,32 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
+from pydantic_settings import BaseSettings
 
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-MANAGER_ID = int(os.getenv("MANAGER_ID", "0"))
-WIFE_ID = int(os.getenv("WIFE_ID", "0"))
-VADOS_ID = int(os.getenv("VADOS_ID", "0"))
-WEB_APP_URL = os.getenv("WEB_APP_URL")
-DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1")
-SYNC_DB = os.getenv("SYNC_DB", "False").lower() in ("true", "1")
-LOG_DIR = BASE_DIR / "logs"
-SYNC_DB_INTERVAL = int(os.getenv("SYNC_DB_INTERVAL", "False"))
 
-# Business Logic
-PRICE_MULTIPLIER = 0.5
+class TelegramSettings(BaseSettings):
+    bot_token: str = os.getenv("BOT_TOKEN")
+    manager_id: int = int(os.getenv("MANAGER_ID", "0"))
+
+
+class DbSettings(BaseSettings):
+    db_name: str = "r4DB.db"
+    db_url: str = "sqlite + aiosqlite://" + db_name
+    sync_db: bool = os.getenv("SYNC_DB", "False").lower() in ("true", "1")
+    sync_db_interval: int = int(os.getenv("SYNC_DB_INTERVAL", "False"))
+
+
+class Settings(BaseSettings):
+    telegram: TelegramSettings = TelegramSettings()
+    db: DbSettings = DbSettings()
+    debug: bool = os.getenv("DEBUG", "False").lower() in ("true", "1")
+    LOG_DIR: Path = BASE_DIR / "logs"
+    web_app_url: str = os.getenv("WEB_APP_URL")
+    price_multiplier: float = 0.5
+
+
+settings = Settings()

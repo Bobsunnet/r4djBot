@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message
 
-import config
+from config import settings
 from exceptions import exceptions
 from filters import TextOrCommand
 from keyboards.keyboard import make_auth_kb, make_web_app_kb, make_wo_auth_kb
@@ -135,7 +135,9 @@ async def order_final(message: Message, state: FSMContext):
         )
 
         try:
-            await message.bot.send_message(chat_id=config.MANAGER_ID, text=order_text)
+            await message.bot.send_message(
+                chat_id=settings.telegram.manager_id, text=order_text
+            )
             user_reply_message = (
                 ms.order_processing_message
                 + ". Менеджер зв'яжеться з вами для підтвердження\n"

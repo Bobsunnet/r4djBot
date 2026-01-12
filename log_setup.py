@@ -1,9 +1,9 @@
 import logging
 from logging.handlers import RotatingFileHandler
 
-import config
+from config import settings
 
-config.LOG_DIR.mkdir(exist_ok=True)
+settings.LOG_DIR.mkdir(exist_ok=True)
 
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 formatter = logging.Formatter(LOG_FORMAT)
@@ -11,14 +11,14 @@ formatter = logging.Formatter(LOG_FORMAT)
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.INFO)
 
-if config.DEBUG:
+if settings.debug:
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(formatter)
     root_logger.addHandler(console_handler)
 
 all_logs_handler = RotatingFileHandler(
-    filename=config.LOG_DIR / "bot.log",
+    filename=settings.LOG_DIR / "bot.log",
     maxBytes=1024 * 1024 * 5,
     backupCount=3,
     encoding="utf-8",
@@ -28,7 +28,7 @@ all_logs_handler.setLevel(logging.INFO)
 all_logs_handler.setFormatter(formatter)
 
 error_logs_handler = RotatingFileHandler(
-    filename=config.LOG_DIR / "error.log",
+    filename=settings.LOG_DIR / "error.log",
     maxBytes=1024 * 1024 * 5,
     backupCount=5,
     encoding="utf-8",

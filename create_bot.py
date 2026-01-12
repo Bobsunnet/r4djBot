@@ -5,12 +5,14 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand, BotCommandScopeDefault
 
-import config
 import log_setup  # noqa: F401
+from config import settings
 
 logger = logging.getLogger(__name__)
 
-bot = Bot(token=config.BOT_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
+bot = Bot(
+    token=settings.telegram.bot_token, default=DefaultBotProperties(parse_mode="HTML")
+)
 dp = Dispatcher(storage=MemoryStorage())
 
 

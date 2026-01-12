@@ -15,7 +15,7 @@ router = web.RouteTableDef()
 
 def get_items_json():
     """Return all items formatted for the WebApp JSON API."""
-    import config
+    from config import settings
 
     items = db_handler.read_all("items")
     return [
@@ -24,7 +24,7 @@ def get_items_json():
             "name": item["name"],
             "desc": item["desc"],
             "amount": item["amount"],
-            "price": item["price"] * config.PRICE_MULTIPLIER,
+            "price": item["price"] * settings.price_multiplier,
         }
         for item in items
     ]

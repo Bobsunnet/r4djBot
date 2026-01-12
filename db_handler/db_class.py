@@ -1,6 +1,6 @@
 import logging
 
-from config import SYNC_DB
+from config import settings
 
 from .api_calls import get_prices_data
 from .connection import SqliteConnection
@@ -9,10 +9,10 @@ logger = logging.getLogger(__name__)
 
 
 class DBHandler:
-    sync_on = SYNC_DB
+    sync_on = settings.db.sync_db
 
-    def __init__(self, db_name: str):
-        self.db_name = db_name
+    def __init__(self):
+        self.db_name = settings.db.db_name
         self.create_db()
         self.update_items_table()
 
@@ -105,4 +105,4 @@ class DBHandler:
             logger.info("Users table exists or created successfully.")
 
 
-db_handler = DBHandler("r4DB.db")
+db_handler = DBHandler()
