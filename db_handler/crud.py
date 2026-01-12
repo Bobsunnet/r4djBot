@@ -5,6 +5,7 @@ from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db_handler.models import Item, User
+from db_handler.schemas.user import UserCreate
 
 
 async def get_items(session: AsyncSession) -> List[Item]:
@@ -18,3 +19,10 @@ async def get_user_by_tg_id(session: AsyncSession, user_id: int) -> User:
     stmt = select(User).where(User.user_id == user_id)
     result: Result = await session.execute(stmt)
     return result.scalar_one_or_none()
+
+
+async def create_user(session: AsyncSession, user: UserCreate) -> User:
+    user = User(**user.model_dump())
+    session.add(user)
+    await session.commit()
+    return user

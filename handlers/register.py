@@ -4,8 +4,10 @@ from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from db_handler.db_class import db_handler
+from db_handler import crud
+from db_handler.schemas.user import UserCreate
 from keyboards import make_auth_kb, make_share_contact_kb
 from utils import messages as ms
 from utils.utils import is_valid_number, validate_name
@@ -56,7 +58,9 @@ async def registration_surname(message: Message, state: FSMContext):
 
 
 @register_router.message(Registration.phone, F.contact | F.text)
-async def registration_phone(message: Message, state: FSMContext):
+async def registration_phone(
+    message: Message, state: FSMContext, session: AsyncSession
+):
     if message.contact:
         await state.update_data(phone=message.contact.phone_number)
     else:
@@ -71,15 +75,16 @@ async def registration_phone(message: Message, state: FSMContext):
             return
 
     data = await state.get_data()
+    user = UserCreate(
+        name=data["name"],
+        surname=data["surname"],
+        phone_number=data["phone"],
+        user_id=message.from_user.id,
+        first_name=message.from_user.first_name,
+        last_name=message.from_user.last_name,
+    )
     try:
-        db_handler.create_user(
-            user_id=message.from_user.id,
-            name=data["name"],
-            surname=data["surname"],
-            first_name=message.from_user.first_name,
-            last_name=message.from_user.last_name,
-            phone_number=data["phone"],
-        )
+        await crud.create_user(session=session, user=user)
 
         await message.answer(
             f"Дякуємо за реєстрацію, {data['name']}!", reply_markup=make_auth_kb()
