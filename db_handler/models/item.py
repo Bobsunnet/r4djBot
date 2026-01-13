@@ -8,7 +8,7 @@ class Item(Base):
     __tablename__ = "items"
 
     name: Mapped[str] = mapped_column(String(512))
-    hash_code: Mapped[str] = mapped_column(String(10), unique=True)
+    hash_code: Mapped[str] = mapped_column(String(10), unique=True, nullable=True)
     desc: Mapped[str] = mapped_column(String(1024), nullable=True)
     price: Mapped[int] = mapped_column()
     amount: Mapped[int] = mapped_column()
