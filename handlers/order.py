@@ -5,14 +5,14 @@ from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
-from exceptions import exceptions
+from db_handler.crud import get_user_by_tg_id
 from filters import TextOrCommand
 from keyboards.keyboard import make_auth_kb, make_web_app_kb, make_wo_auth_kb
 from utils import messages as ms
 from utils import utils
-from utils.db_utils import get_authorized_user
 
 order_router = Router()
 logger = logging.getLogger(__name__)
@@ -27,8 +27,8 @@ class OrderStates(StatesGroup):
 
 
 @order_router.message(TextOrCommand("order"))
-async def order_start(message: Message, state: FSMContext):
-    user = get_authorized_user(message.from_user.id)
+async def order_start(message: Message, state: FSMContext, session: AsyncSession):
+    user = await get_user_by_tg_id(session=session, user_id=message.from_user.id)
     if not user:
         await message.answer(
             ms.not_authorized_message,
@@ -106,7 +106,7 @@ async def order_comment(message: Message, state: FSMContext):
 
 
 @order_router.message(F.web_app_data, OrderStates.items)
-async def order_final(message: Message, state: FSMContext):
+async def order_final(message: Message, state: FSMContext, session: AsyncSession):
     """Process order data sent from the Web App."""
     try:
         state_data = await state.get_data()
@@ -117,7 +117,7 @@ async def order_final(message: Message, state: FSMContext):
         if not items:
             user_reply_message = "Ви не вибрали жодного товару"
             return
-        user = get_authorized_user(message.from_user.id)
+        user = await get_user_by_tg_id(session=session, user_id=message.from_user.id)
         logger.info(f"User: {user}")
 
         # Format order message
@@ -127,10 +127,10 @@ async def order_final(message: Message, state: FSMContext):
             count=state_data["work_days"],
             address=state_data["address"],
             comment=state_data["comment"],
-            name=user["name"],
-            surname=user["surname"],
+            name=user.name,
+            surname=user.surname,
             username=message.from_user.username,
-            phone_number=user["phone_number"],
+            phone_number=user.phone_number,
             items=items,
         )
 
@@ -155,9 +155,6 @@ async def order_final(message: Message, state: FSMContext):
     except json.JSONDecodeError:
         user_reply_message = ms.failed_to_send_order_message
         logger.error(f"Invalid JSON from web app: {message.web_app_data.data}")
-    except exceptions.UserNotFound:
-        user_reply_message = ms.not_authorized_message + ms.failed_to_send_order_message
-        logger.error(f"User not found in database: {message.from_user.id}")
     except Exception as e:
         user_reply_message = ms.failed_to_send_order_message
         logger.error(f"Error handling web app data: {e}")

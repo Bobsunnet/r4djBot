@@ -1,3 +1,4 @@
+from logging import getLogger
 from typing import List
 
 from sqlalchemy import select
@@ -6,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db_handler.models import Item, User
 from db_handler.schemas.user import UserCreate
+
+logger = getLogger(__name__)
 
 
 async def get_items(session: AsyncSession) -> List[Item]:

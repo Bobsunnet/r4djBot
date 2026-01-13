@@ -25,4 +25,6 @@ def download_sheets_data(url: str) -> list:
 
 def get_prices_data() -> list:
     """Filters out prices data from Google Sheets."""
-    return filter(lambda row: row[3] or row[4], download_sheets_data(URL_SHEET)[1:])
+    return list(
+        filter(lambda row: row[3] or row[4], download_sheets_data(URL_SHEET)[1:])
+    )

@@ -1,1 +1,1 @@
-from .db_class import db_handler
+from .db_helper import db_helper

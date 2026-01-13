@@ -2,8 +2,7 @@ import asyncio
 import logging
 
 from create_bot import bot, dp, set_commands
-from db_handler.models import db_helper
-from db_handler.models.base import Base
+from db_handler.bulk_operations import bulk_insert_items, create_db
 from handlers import (
     contacts_router,
     help_router,
@@ -18,13 +17,13 @@ from schedulers.schedulers import scheduler_setup
 logger = logging.getLogger(__name__)
 
 
-async def create_test_db():
-    async with db_helper.engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+async def startup_db():
+    await create_db()
+    await bulk_insert_items()
 
 
 async def main():
-    await create_test_db()
+    await startup_db()
 
     dp.update.middleware(DbSessionMiddleware())
     dp.include_router(start_router)

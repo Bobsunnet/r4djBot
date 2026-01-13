@@ -4,7 +4,7 @@ from pathlib import Path
 from aiohttp import web
 
 from db_handler.crud import get_items
-from db_handler.models.db_helper import db_helper
+from db_handler.db_helper import db_helper
 
 logger = logging.getLogger(__name__)
 

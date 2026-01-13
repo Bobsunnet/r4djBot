@@ -3,14 +3,15 @@ import logging
 from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from db_handler.crud import get_user_by_tg_id
 from filters import TextOrCommand
 from keyboards import (
     make_auth_kb,
     make_wo_auth_kb,
 )
 from utils import messages as ms
-from utils.db_utils import get_authorized_user
 from utils.utils import format_welcome_message
 
 logger = logging.getLogger(__name__)
@@ -23,8 +24,11 @@ start_router = Router()
 
 
 @start_router.message(CommandStart())
-async def cmd_start(message: Message):
-    user = get_authorized_user(message.from_user.id)
+async def cmd_start(message: Message, session: AsyncSession):
+    user = await get_user_by_tg_id(
+        session=session,
+        user_id=message.from_user.id,
+    )
     if user:
         reply_text = format_welcome_message(user["name"])
         await message.answer(reply_text, reply_markup=make_auth_kb())

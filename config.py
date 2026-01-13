@@ -16,7 +16,8 @@ class TelegramSettings(BaseSettings):
 
 class DbSettings(BaseSettings):
     db_name: str = "r4DB.db"
-    db_url: str = "sqlite + aiosqlite://" + db_name
+    db_url: str = f"sqlite+aiosqlite:///{BASE_DIR}/r4DB.db"
+    echo: bool = os.getenv("ECHO", "False").lower() in ("true", "1")
     sync_db: bool = os.getenv("SYNC_DB", "False").lower() in ("true", "1")
     sync_db_interval: int = int(os.getenv("SYNC_DB_INTERVAL", "False"))
 
