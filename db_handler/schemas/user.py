@@ -5,6 +5,7 @@ class UserBase(BaseModel):
     name: str
     surname: str
     user_id: int
+    username: str | None
     first_name: str | None
     last_name: str | None
     phone_number: str

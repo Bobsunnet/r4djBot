@@ -79,6 +79,7 @@ async def registration_phone(
         name=data["name"],
         surname=data["surname"],
         phone_number=data["phone"],
+        username=message.from_user.username,
         user_id=message.from_user.id,
         first_name=message.from_user.first_name,
         last_name=message.from_user.last_name,
