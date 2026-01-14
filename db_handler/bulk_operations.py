@@ -1,5 +1,7 @@
 from logging import getLogger
 
+from sqlalchemy.dialects.postgresql import insert
+
 from config import settings
 from db_handler.api_calls import get_prices_data
 from db_handler.db_helper import db_helper
@@ -21,14 +23,27 @@ async def bulk_insert_items():
         return
 
     data = get_prices_data()
-    column_names = ["hash_code", "name", "desc", "amount", "price"]
+    column_names = ["hash_code", "name", "description", "amount", "price"]
 
-    if data:
-        data_dict = [dict(zip(column_names, row)) for row in data]
-        async with db_helper.engine.connect() as conn:
-            table_object = Item.__table__
-            await conn.execute(table_object.delete())
-            await conn.execute(table_object.insert(), data_dict)
-            await conn.commit()
+    if not data:
+        return
 
+    data_dict = [
+        {"id": i + 1, **dict(zip(column_names, row))} for i, row in enumerate(data)
+    ]
+
+    table = Item.__table__
+    stmt = insert(table).values(data_dict)
+    stmt = stmt.on_conflict_do_update(
+        index_elements=[table.c.hash_code],
+        set_={
+            "id": stmt.excluded.id,
+            "name": stmt.excluded.name,
+            "description": stmt.excluded.description,
+            "amount": stmt.excluded.amount,
+            "price": stmt.excluded.price,
+        },
+    )
+    async with db_helper.engine.begin() as conn:
+        await conn.execute(stmt)
         logger.info("SYNC IS ON. Database SYNCED successfully.")
