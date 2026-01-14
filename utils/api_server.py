@@ -23,7 +23,7 @@ async def get_items_json():
 
         return [
             {
-                "id": item.hash_code,
+                "id": item.row_order,
                 "name": item.name,
                 "desc": item.description,
                 "amount": item.amount,

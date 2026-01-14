@@ -12,7 +12,7 @@ logger = getLogger(__name__)
 
 
 async def get_items(session: AsyncSession) -> List[Item]:
-    stmt = select(Item).order_by(Item.id)
+    stmt = select(Item).order_by(Item.row_order)
     result: Result = await session.execute(stmt)
     items = result.scalars().all()
     return list(items)

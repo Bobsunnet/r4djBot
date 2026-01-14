@@ -1,5 +1,6 @@
 from logging import getLogger
 
+from sqlalchemy import delete, func
 from sqlalchemy.dialects.postgresql import insert
 
 from config import settings
@@ -28,8 +29,11 @@ async def bulk_insert_items():
     if not data:
         return
 
+    sync_time = func.now()
+
     data_dict = [
-        {"id": i + 1, **dict(zip(column_names, row))} for i, row in enumerate(data)
+        {"row_order": i, "last_seen_at": sync_time, **dict(zip(column_names, row))}
+        for i, row in enumerate(data, start=1)
     ]
 
     table = Item.__table__
@@ -37,13 +41,15 @@ async def bulk_insert_items():
     stmt = stmt.on_conflict_do_update(
         index_elements=[table.c.hash_code],
         set_={
-            "id": stmt.excluded.id,
+            "row_order": stmt.excluded.row_order,
             "name": stmt.excluded.name,
             "description": stmt.excluded.description,
             "amount": stmt.excluded.amount,
             "price": stmt.excluded.price,
+            "last_seen_at": sync_time,
         },
     )
     async with db_helper.engine.begin() as conn:
         await conn.execute(stmt)
+        await conn.execute(delete(table).where(table.c.last_seen_at < sync_time))
         logger.info("SYNC IS ON. Database SYNCED successfully.")
