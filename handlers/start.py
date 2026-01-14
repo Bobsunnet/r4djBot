@@ -30,7 +30,7 @@ async def cmd_start(message: Message, session: AsyncSession):
         user_id=message.from_user.id,
     )
     if user:
-        reply_text = format_welcome_message(user["name"])
+        reply_text = format_welcome_message(user.name)
         await message.answer(reply_text, reply_markup=make_auth_kb())
     else:
         reply_text = "Вітаємо. " + ms.not_authorized_message
