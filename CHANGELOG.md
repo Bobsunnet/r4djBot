@@ -1,6 +1,10 @@
 # CHANGELOG
 
 <!-- version list -->
+## v1.2.0 (2026-01-15)
+
+### Refactoring 
+- move to Postrges
 
 ## v1.1.0 (2026-01-11)
 
