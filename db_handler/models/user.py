@@ -1,4 +1,4 @@
-from sqlalchemy import String
+from sqlalchemy import BigInteger, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from db_handler.models.base import Base
@@ -10,7 +10,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(128))
     surname: Mapped[str] = mapped_column(String(128), nullable=True)
-    user_id: Mapped[int] = mapped_column(unique=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, unique=True)
     username: Mapped[str] = mapped_column(String(256), nullable=True)
     first_name: Mapped[str] = mapped_column(String(256), nullable=True)
     last_name: Mapped[str] = mapped_column(String(256), nullable=True)
