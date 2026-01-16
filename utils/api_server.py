@@ -3,6 +3,7 @@ from pathlib import Path
 
 from aiohttp import web
 
+from config import settings
 from db_handler.crud import get_items
 from db_handler.db_helper import db_helper
 
@@ -16,8 +17,6 @@ router = web.RouteTableDef()
 
 async def get_items_json():
     """Return all items formatted for the WebApp JSON API."""
-    from config import settings
-
     async with db_helper.session_getter() as session:
         items = await get_items(session=session)
 
@@ -49,7 +48,9 @@ async def handle_static(request):
     if not file_path.exists():
         return web.Response(status=404, text="File not found")
 
-    return web.FileResponse(file_path, headers={"Cache-Control": "max-age=86400"})
+    return web.FileResponse(
+        file_path, headers={"Cache-Control": f"max-age={settings.cache.js_cache_ttl}"}
+    )
 
 
 @router.get("/api/items")
