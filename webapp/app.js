@@ -1,12 +1,14 @@
 import loadItems from './api.js';
-import escapeHtml from './utils.js';
+import utils from './utils.js';
+const { escapeHtml, formatWorkDaysText } = utils;
+
 // Initialize Telegram Web App
 const tg = window.Telegram.WebApp;
 tg.expand();
 
 // State
 let allItems = [];
-let cart = []; // Now stores {item, quantity} objects
+let cart = []; // Stores {item, quantity} objects
 
 // Parse URL Parameters
 
@@ -23,8 +25,13 @@ const closeCart = document.getElementById('closeCart');
 const cartItems = document.getElementById('cartItems');
 const cartTotal = document.getElementById('cartTotal');
 const workDaysDisplay = document.getElementById('workDaysDisplay');
+const workDaysLabel = document.getElementById('workDaysLabel');
+
 if (workDaysDisplay) {
     workDaysDisplay.textContent = workDays;
+    if (workDaysLabel) {
+        workDaysLabel.textContent = formatWorkDaysText(workDays, ['зміну', 'зміни', 'змін']);
+    }
 }
 
 // Get quantity of item in cart
@@ -34,22 +41,16 @@ function getCartQuantity(itemId) {
 }
 
 // Update quantity in cart
-function setCartQuantity(itemId, quantity) {
+function updateInCartQuantity(itemId, quantity) {
     const item = allItems.find(i => i.id === itemId);
     if (!item) return;
 
-    const cartIndex = cart.findIndex(c => c.item.id === itemId);
+    const entryIndex = cart.findIndex(entry => entry.item.id === itemId);
     
-    if (quantity <= 0) {
-        if (cartIndex > -1) {
-            cart.splice(cartIndex, 1);
-        }
+    if (entryIndex > -1) {
+        cart[entryIndex].quantity = quantity;
     } else {
-        if (cartIndex > -1) {
-            cart[cartIndex].quantity = quantity;
-        } else {
-            cart.push({ item, quantity });
-        }
+        cart.push({ item, quantity });
     }
     
     updateCartUI();    
@@ -72,14 +73,15 @@ function addToCart(itemId) {
     const item = allItems.find(i => i.id === itemId);
     const inputField = document.getElementById(`qty-${itemId}`);
     const inputValue = parseInt(inputField.value)
-    if (inputValue <= 0) 
+    if (inputValue <= 0) {
         return;
+    }
 
     const inCartQty = getCartQuantity(itemId);
     if (inCartQty + inputValue <= item.amount) {
-        setCartQuantity(itemId, inCartQty + inputValue);
+        updateInCartQuantity(itemId, inCartQty + inputValue);
     }
-    updateAddButton(inputValue, itemId);
+    updateAddButton(1, itemId);
 }
 
 function increaseInCartAmount(itemId) {
@@ -165,7 +167,7 @@ function updateSendButton() {
 
 function renderCart() {
     if (cart.length === 0) {
-        cartItems.innerHTML = '<div class="empty-cart">Your cart is empty</div>';
+        cartItems.innerHTML = '<div class="empty-cart">Кошик порожній</div>';
         return;
     }
 
@@ -184,11 +186,16 @@ function renderCart() {
     `).join('');
 }
 
+/**
+ * Updates the add button state based on the current value and item amount.
+ * @param {number} value - The current value in the quantity input.
+ * @param {number} itemId - The ID of the item.
+ */
 function updateAddButton(value, itemId) {
     const item_amount = allItems.find(i => i.id == itemId).amount;
-    value = parseInt(value);
     const addButton = document.getElementById(`qty-btn-${itemId}`);
     const inCartAmount = getCartQuantity(itemId);
+    console.log(`value: ${value}, item_amount: ${item_amount}, inCartAmount: ${inCartAmount}`);
 
     if ((value < 1) || (value > item_amount) || (value + inCartAmount > item_amount)) {
         addButton.disabled = true;
@@ -198,7 +205,9 @@ function updateAddButton(value, itemId) {
 }
 
 itemsList.addEventListener('input', (e) => {
-    updateAddButton(parseInt(e.target.value), parseInt(e.target.id.split('-')[1]));
+    const value = parseInt(e.target.value);
+    const itemId = parseInt(e.target.id.split('-')[1]);
+    updateAddButton(value, itemId);
 })
 
 

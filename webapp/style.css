@@ -48,7 +48,7 @@ header {
     border: none;
     padding: 10px 16px;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -293,4 +293,9 @@ header {
     text-align: center;
     padding: 40px 20px;
     color: var(--tg-theme-hint-color, #999);
+}
+
+.total-label {
+    font-size: 16px;
+    color: var(--tg-theme-text-color, #000000);
 }

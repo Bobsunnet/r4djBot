@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Каталог</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=1">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
@@ -35,14 +35,17 @@
             </div>
             <div class="cart-footer">
                 <div class="cart-total">
-                    <strong>Сума за <span id="workDaysDisplay"></span> змін:</strong>
-                    <span id="cartTotal">0</span>
+                    <span class="total-label">Сума за
+                        <span id="workDaysDisplay"></span>
+                        <span id="workDaysLabel">змін</span>:
+                    </span>
+                    <span id="cartTotal">0</span> грн
                 </div>
             </div>
         </div>
     </div>
 
-    <script type="module" src="/static/app.js?v=1"></script>
+    <script type="module" src="/static/app.js?v=4"></script>
 </body>
 
 </html>
