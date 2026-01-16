@@ -112,7 +112,7 @@ function decreaseInCartAmount(itemId) {
 // Render items list
 function renderItemsList(items) {
     if (items.length === 0) {
-        itemsList.innerHTML = '<div class="loading">No items found</div>';
+        itemsList.innerHTML = '<div class="loading">По такому запиту нічого не знайдено =(</div>';
         return;
     }
 
@@ -123,7 +123,7 @@ function renderItemsList(items) {
             <div class="item-info">
                 <div class="item-name">${escapeHtml(item.name)}</div>
                 ${item.desc ? `<div class="item-desc">${escapeHtml(item.desc)}</div>` : ''}
-                <div class="item-price">Available: ${item.amount}</div>
+                <div class="item-price">Доступно: ${item.amount}</div>
             </div>
             <div class="quantity-container">
                 <div class="quantity-info">
@@ -145,16 +145,22 @@ function updateCartUI() {
     
     const total = cart.reduce((sum, c) => sum + (c.item.price * c.quantity), 0);
     cartTotal.textContent = total*workDays;
+    updateSendButton(totalItems);
+    renderCart();
+}
 
-    // Update Telegram MainButton
-    if (cart.length > 0) {
-        tg.MainButton.setText(`Send Order (${totalItems} items)`);
-        tg.MainButton.show();
-    } else {
-        tg.MainButton.hide();
+function updateSendButton() {
+    const params = {
+        text: "Замовити",
+        is_active: false,
+        color: "#bfbfbf",
+    }
+    if (cart.length > 0){
+        params.is_active = true;
+        params.color = "#40a7e3";
     }
 
-    renderCart();
+    tg.MainButton.setParams(params);
 }
 
 function renderCart() {
@@ -237,7 +243,9 @@ loadItems().then(items => {
         renderItemsList(allItems);
     }
 });
+
 updateCartUI();
+tg.MainButton.show();
 
 window.addToCart = addToCart;
 window.increaseInCartAmount = increaseInCartAmount;

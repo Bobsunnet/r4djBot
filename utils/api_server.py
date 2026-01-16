@@ -49,7 +49,7 @@ async def handle_static(request):
     if not file_path.exists():
         return web.Response(status=404, text="File not found")
 
-    return web.FileResponse(file_path)
+    return web.FileResponse(file_path, headers={"Cache-Control": "max-age=86400"})
 
 
 @router.get("/api/items")
