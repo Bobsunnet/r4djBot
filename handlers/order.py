@@ -119,6 +119,11 @@ async def order_date(message: Message, state: FSMContext):
         )
 
 
+@order_router.message(OrderStates.date)
+async def order_date_bad_input(message: Message, state: FSMContext):
+    await message.answer(ms.bad_input_message + "\n\n" + order_msgs["date"])
+
+
 @order_router.message(OrderStates.work_days, F.text)
 async def order_work_days(message: Message, state: FSMContext):
     await state.set_state(OrderStates.address)
@@ -141,11 +146,21 @@ async def order_work_days(message: Message, state: FSMContext):
         )
 
 
+@order_router.message(OrderStates.work_days)
+async def order_work_days_bad_input(message: Message, state: FSMContext):
+    await message.answer(ms.bad_input_message + "\n\n" + order_msgs["work_days"])
+
+
 @order_router.message(OrderStates.address, F.text)
 async def order_address(message: Message, state: FSMContext):
     await state.set_state(OrderStates.comment)
     await state.update_data(address=message.text)
     await message.answer(order_msgs["comment"])
+
+
+@order_router.message(OrderStates.address)
+async def order_address_bad_input(message: Message, state: FSMContext):
+    await message.answer(ms.bad_input_message + "\n\n" + order_msgs["address"])
 
 
 @order_router.message(OrderStates.comment, F.text)
@@ -159,7 +174,12 @@ async def order_comment(message: Message, state: FSMContext):
     )
 
 
-@order_router.message(F.web_app_data, OrderStates.items)
+@order_router.message(OrderStates.comment)
+async def order_comment_bad_input(message: Message, state: FSMContext):
+    await message.answer(ms.bad_input_message + "\n\n" + order_msgs["comment"])
+
+
+@order_router.message(OrderStates.items, F.web_app_data)
 async def order_final(message: Message, state: FSMContext, session: AsyncSession):
     """Process order data sent from the Web App."""
     try:
@@ -215,3 +235,8 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
     finally:
         await state.clear()
         await message.answer(user_reply_message, reply_markup=make_auth_kb())
+
+
+@order_router.message(OrderStates.items)
+async def order_items_bad_input(message: Message, state: FSMContext):
+    await message.answer(ms.bad_input_message + "\n\n" + order_msgs["items"])
