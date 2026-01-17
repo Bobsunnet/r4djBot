@@ -2,6 +2,7 @@ import json
 import logging
 
 from aiogram import F, Router
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message
@@ -10,7 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config import settings
 from db_handler.crud import get_user_by_tg_id
 from filters import TextOrCommand
-from keyboards.keyboard import make_auth_kb, make_web_app_kb, make_wo_auth_kb
+from keyboards.keyboard import (
+    make_auth_kb,
+    make_order_cancel_kb,
+    make_web_app_kb,
+    make_wo_auth_kb,
+)
 from utils import messages as ms
 from utils import utils
 
@@ -18,12 +24,21 @@ order_router = Router()
 logger = logging.getLogger(__name__)
 
 
+order_msgs = {
+    "date": f"Введіть дати отримання і повернення обладнання у форматі:{ms.date_format_message}",
+    "work_days": "Введіть кількість днів роботи одним числом, наприклад: 3",
+    "address": "Введіть адресу та час доставки\nАбо час самовивозу зі складу (м. Київ, Здолбунівська 2)",
+    "comment": "Введіть коментар до замовлення",
+    "items": "Оберіть з каталогу обладнання, натиснувши на кнопку знизу",
+}
+
+
 class OrderStates(StatesGroup):
     date = State()
     work_days = State()
     address = State()
-    items = State()
     comment = State()
+    items = State()
 
 
 @order_router.message(TextOrCommand("order"))
@@ -35,11 +50,52 @@ async def order_start(message: Message, state: FSMContext, session: AsyncSession
             reply_markup=make_wo_auth_kb(),
         )
         return
+
     await state.clear()
     await state.set_state(OrderStates.date)
     await message.answer(
-        f"Введіть дати отримання і повернення обладнання у форматі:{ms.date_format_message}"
+        order_msgs["date"],
+        reply_markup=make_order_cancel_kb(),
     )
+
+
+@order_router.message(StateFilter(OrderStates), F.command("cancel"))
+@order_router.message(StateFilter(OrderStates), F.text.casefold() == "cancel")
+async def order_cancel(message: Message, state: FSMContext):
+    current_state = await state.get_state()
+    if current_state is None:
+        return
+
+    await state.clear()
+    await message.answer("Процес замовлення зупинено", reply_markup=make_auth_kb())
+
+
+@order_router.message(StateFilter(OrderStates), F.command("back"))
+@order_router.message(StateFilter(OrderStates), F.text.casefold() == "back")
+async def order_back(message: Message, state: FSMContext):
+    current_state = await state.get_state()
+    if current_state == OrderStates.date:
+        await message.answer(
+            "Не можливо повернутися на попредній крок, так як це перший. Для виходу натисніть кнопку 'Cancel'"
+            + "\n\n"
+            + order_msgs["date"]
+        )
+        return
+
+    previous = None
+    print(OrderStates.__all_states__)
+    print(current_state)
+    for state_step in OrderStates.__all_states__:
+        if state_step == current_state:
+            await state.set_state(previous)
+            await message.answer(
+                order_msgs[previous.state.split(":")[-1]],
+                reply_markup=make_order_cancel_kb(),
+            )
+            print(previous.state)
+            return
+
+        previous = state_step
 
 
 @order_router.message(OrderStates.date, F.text)
@@ -55,7 +111,7 @@ async def order_date(message: Message, state: FSMContext):
             return
 
         await state.update_data({"start_date": start_date, "end_date": end_date})
-        await message.answer("Введіть кількість днів роботи одним числом, наприклад: 3")
+        await message.answer(order_msgs["work_days"])
     except ValueError:
         await state.set_state(OrderStates.date)
         await message.answer(
@@ -77,9 +133,7 @@ async def order_work_days(message: Message, state: FSMContext):
             return
 
         await state.update_data(work_days=work_days)
-        await message.answer(
-            "Введіть адресу та час доставки\nАбо час самовивозу зі складу (м. Київ, Здолбунівська 2)"
-        )
+        await message.answer(order_msgs["address"])
     else:
         await state.set_state(OrderStates.work_days)
         await message.answer(
@@ -91,7 +145,7 @@ async def order_work_days(message: Message, state: FSMContext):
 async def order_address(message: Message, state: FSMContext):
     await state.set_state(OrderStates.comment)
     await state.update_data(address=message.text)
-    await message.answer("Введіть коментар до замовлення")
+    await message.answer(order_msgs["comment"])
 
 
 @order_router.message(OrderStates.comment, F.text)
@@ -100,7 +154,7 @@ async def order_comment(message: Message, state: FSMContext):
     await state.update_data(comment=message.text)
     data = await state.get_data()
     await message.answer(
-        "Оберіть з каталогу обладнання, натиснувши на кнопку знизу",
+        order_msgs["items"],
         reply_markup=make_web_app_kb(data["work_days"]),
     )
 
@@ -110,13 +164,13 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
     """Process order data sent from the Web App."""
     try:
         state_data = await state.get_data()
-        logger.debug(f"State data: {state_data}")
         web_app_data = json.loads(message.web_app_data.data)
         items = web_app_data.get("items", [])
         logger.info(f"ORDER FROM {message.from_user.id} received: {items}")
         if not items:
             user_reply_message = "Ви не вибрали жодного товару"
             return
+
         user = await get_user_by_tg_id(session=session, user_id=message.from_user.id)
         logger.info(f"User: {user}")
 

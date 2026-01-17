@@ -6,6 +6,12 @@ contacts_button = KeyboardButton(text="Contacts")
 register_button = KeyboardButton(text="Register")
 
 
+keyboard_cancel = [
+    [KeyboardButton(text="Back")],
+    [KeyboardButton(text="Cancel")],
+]
+
+
 def make_auth_kb():
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -43,14 +49,22 @@ def make_confirmation_kb():
     )
 
 
+def make_order_cancel_kb():
+    return ReplyKeyboardMarkup(
+        keyboard=keyboard_cancel,
+        resize_keyboard=True,
+    )
+
+
 def make_web_app_kb(work_days: int):
     url_with_work_days = f"{settings.web_app_url}?work_days={work_days}"
-    button = KeyboardButton(
+    app_button = KeyboardButton(
         text="Обрати з Каталогу", web_app=WebAppInfo(url=url_with_work_days)
     )
     return ReplyKeyboardMarkup(
         keyboard=[
-            [button],
+            *keyboard_cancel,
+            [app_button],
         ],
         resize_keyboard=True,
     )
