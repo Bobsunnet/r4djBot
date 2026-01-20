@@ -83,8 +83,6 @@ async def order_back(message: Message, state: FSMContext):
         return
 
     previous = None
-    print(OrderStates.__all_states__)
-    print(current_state)
     for state_step in OrderStates.__all_states__:
         if state_step == current_state:
             await state.set_state(previous)
@@ -92,7 +90,6 @@ async def order_back(message: Message, state: FSMContext):
                 order_msgs[previous.state.split(":")[-1]],
                 reply_markup=make_order_cancel_kb(),
             )
-            print(previous.state)
             return
 
         previous = state_step
