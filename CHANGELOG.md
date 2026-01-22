@@ -1,6 +1,17 @@
 # CHANGELOG
 
 <!-- version list -->
+## v1.3(2026-01-22)
+
+### Bug Fixes
+
+- Phone number validation
+  ([`c3eb129`](https://github.com/Bobsunnet/r4djBot/commit/c3eb1297ce09ba6208ea44817e77f772739ad437))
+### Features
+
+- add back/cancel buttons to order flow
+  ([`c3eb129`](https://github.com/Bobsunnet/r4djBot/commit/c3eb1297ce09ba6208ea44817e77f772739ad437))
+
 ## v1.2.0 (2026-01-15)
 
 ### Refactoring 
