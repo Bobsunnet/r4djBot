@@ -4,6 +4,7 @@ from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db_handler import crud
@@ -62,12 +63,15 @@ async def registration_phone(
     message: Message, state: FSMContext, session: AsyncSession
 ):
     if message.contact:
-        await state.update_data(phone=message.contact.phone_number)
+        phone = message.contact.phone_number
+        if not phone.startswith("+"):
+            phone = "+" + phone
+
+        await state.update_data(phone=phone)
     else:
         if is_valid_number(message.text):
             await state.update_data(phone=message.text)
         else:
-            await state.set_state(Registration.phone)
             await message.answer(
                 'Не корректний номер телефону. Якщо вводите "руками", то пишіть повний формат номеру,'
                 'наприклад: "+380991234567". А краще скористайтеся кнопкою внизу: "Поділитися контактом"'
@@ -90,9 +94,15 @@ async def registration_phone(
         await message.answer(
             f"Дякуємо за реєстрацію, {data['name']}!", reply_markup=make_auth_kb()
         )
-
+    except IntegrityError:
+        logger.error(
+            f"[DB] registration error: User {message.from_user} is already registered"
+        )
+        await message.answer("Ви вже зареєстровані")
     except Exception as e:
-        logger.error(f"Error {e}. Failed to register user: {message.from_user}")
+        logger.error(
+            f"[GENERAL] registration error: {e}. Failed to register user: {message.from_user}"
+        )
         await message.answer(f"Помилка реєстрації, {ms.reload_help_message}")
     finally:
         await state.clear()

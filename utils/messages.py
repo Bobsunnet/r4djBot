@@ -1,4 +1,4 @@
-reload_help_message = "Спробуйте ще раз, перезавнтаживши бота командою /start"
+reload_help_message = "Спробуйте ще раз, перезавантаживши бота командою /start"
 
 date_format_message = "\ndd.mm.yy - dd.mm.yy\n(день.місяць.рік)"
 
