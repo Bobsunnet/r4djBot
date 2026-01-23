@@ -19,7 +19,7 @@ async def get_items(session: AsyncSession) -> List[Item]:
     return list(items)
 
 
-async def get_user_by_tg_id(session: AsyncSession, user_id: int) -> User:
+async def get_user_by_tg_id(session: AsyncSession, user_id: int) -> User | None:
     stmt = select(User).where(User.user_id == user_id)
     result: Result = await session.execute(stmt)
     return result.scalar_one_or_none()

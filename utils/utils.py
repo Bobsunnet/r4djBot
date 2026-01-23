@@ -84,8 +84,8 @@ def validate_date(date_str: str) -> bool:
 
     for format in formats:
         try:
-            datetime.strptime(date_str, format)
-            return True
+            return datetime.strptime(date_str, format).date()
         except ValueError:
             pass
-    return False
+
+    return None

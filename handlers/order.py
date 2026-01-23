@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import date
 
 from aiogram import F, Router
 from aiogram.filters import StateFilter
@@ -9,7 +10,9 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
+from db_handler import crud
 from db_handler.crud import get_user_by_tg_id
+from db_handler.schemas.order import OrderCreate
 from filters import TextOrCommand
 from keyboards.keyboard import (
     make_auth_kb,
@@ -100,7 +103,9 @@ async def order_date(message: Message, state: FSMContext):
     await state.set_state(OrderStates.work_days)
     try:
         start_date, end_date = utils.extract_date(message.text)
-        if not utils.validate_date(start_date) or not utils.validate_date(end_date):
+        start_date = utils.validate_date(start_date)
+        end_date = utils.validate_date(end_date)
+        if not start_date or not end_date:
             await state.set_state(OrderStates.date)
             await message.answer(
                 f"Вказано неіснуючу дату. Введіть дати у форматі:{ms.date_format_message}"
@@ -183,24 +188,34 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
         state_data = await state.get_data()
         web_app_data = json.loads(message.web_app_data.data)
         items = web_app_data.get("items", [])
-        logger.info(f"ORDER FROM {message.from_user.id} received: {items}")
+        logger.info(
+            f"[ORDER] ORDER request FROM {message.from_user.id} received: {items}"
+        )
         if not items:
             user_reply_message = "Ви не вибрали жодного товару"
             return
 
         user = await get_user_by_tg_id(session=session, user_id=message.from_user.id)
-        logger.info(f"User: {user}")
-
-        # Format order message
-        order_text = utils.format_order_message(
-            start_date=state_data["start_date"],
-            end_date=state_data["end_date"],
-            count=state_data["work_days"],
+        order = OrderCreate(
+            user_id=user.id,
+            date_start=state_data["start_date"],
+            date_end=state_data["end_date"],
+            work_days=state_data["work_days"],
             address=state_data["address"],
-            comment=state_data["comment"],
+            description=state_data["comment"],
+        )
+        order = await crud.create_order(session=session, order=order)
+        logger.info(f"[ORDER] ORDER FROM {message.from_user.id} created: {order}")
+
+        order_text = utils.format_order_message(
+            start_date=order.date_start,
+            end_date=order.date_end,
+            count=order.work_days,
+            address=order.address,
+            comment=order.description,
             name=user.name,
             surname=user.surname,
-            username=message.from_user.username,
+            username=user.username,
             phone_number=user.phone_number,
             items=items,
         )
