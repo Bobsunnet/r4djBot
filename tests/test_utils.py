@@ -1,3 +1,5 @@
+from datetime import date
+
 from utils import utils
 
 
@@ -70,6 +72,6 @@ def test_validate_date():
     Test that the validate_date function correctly validates a date string.
     """
     date_str = "01.01.24"
-    expected = True
+    expected = date(2024, 1, 1)
     result = utils.validate_date(date_str)
     assert result == expected
