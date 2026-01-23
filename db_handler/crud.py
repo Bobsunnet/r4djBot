@@ -5,7 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db_handler.models import Item, User
+from db_handler.models import Item, Order, User
+from db_handler.schemas.order import OrderCreate
 from db_handler.schemas.user import UserCreate
 
 logger = getLogger(__name__)
@@ -29,3 +30,10 @@ async def create_user(session: AsyncSession, user: UserCreate) -> User:
     session.add(user)
     await session.commit()
     return user
+
+
+async def create_order(session: AsyncSession, order: OrderCreate) -> Order:
+    order = Order(**order.model_dump())
+    session.add(order)
+    await session.commit()
+    return order
