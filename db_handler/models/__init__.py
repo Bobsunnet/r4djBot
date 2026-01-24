@@ -8,5 +8,5 @@ __all__ = (
 
 from .base import Base
 from .item import Item
-from .order import Order
+from .order import Order, OrderStatus
 from .user import User

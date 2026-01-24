@@ -4,9 +4,9 @@ from typing import List
 from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
-from db_handler.models import Item, Order, User
+from db_handler.models import Item, Order, OrderStatus, User
 from db_handler.schemas.order import OrderCreate
 from db_handler.schemas.user import UserCreate
 
@@ -38,6 +38,26 @@ async def create_order(session: AsyncSession, order: OrderCreate) -> Order:
     session.add(order)
     await session.commit()
     return order
+
+
+async def get_pending_orders(session: AsyncSession) -> List[Order]:
+    """
+    Get all pending orders. With user loaded
+
+    Args:
+        session: AsyncSession
+
+    Returns:
+        List[Order]
+    """
+    stmt = (
+        select(Order)
+        .options(joinedload(Order.user))
+        .where(Order.status == OrderStatus.PENDING)
+    )
+    result: Result = await session.execute(stmt)
+    orders = result.scalars().all()
+    return list(orders)
 
 
 async def get_orders_by_userid(

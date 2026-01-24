@@ -6,6 +6,7 @@ from db_handler.bulk_operations import bulk_insert_items, create_db
 from handlers import (
     contacts_router,
     help_router,
+    manager_router,
     order_router,
     register_router,
     start_router,
@@ -33,6 +34,7 @@ async def main():
     dp.include_router(register_router)
     dp.include_router(order_router)
     dp.include_router(user_private_router)
+    dp.include_router(manager_router)
     dp.include_router(unknown_command_router)
 
     await bot.delete_webhook(drop_pending_updates=True)
