@@ -1,3 +1,4 @@
+from .inline import make_order_inline_kb
 from .keyboard import (
     make_auth_kb,
     make_confirmation_kb,

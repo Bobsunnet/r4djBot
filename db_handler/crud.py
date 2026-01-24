@@ -60,6 +60,12 @@ async def get_pending_orders(session: AsyncSession) -> List[Order]:
     return list(orders)
 
 
+async def get_order_by_id(session: AsyncSession, order_id: int) -> Order | None:
+    stmt = select(Order).where(Order.id == order_id)
+    result: Result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
 async def get_orders_by_userid(
     session: AsyncSession, user_id: int
 ) -> List[Order] | None:

@@ -43,6 +43,7 @@ def test_format_order_message():
 
     expected = (
         "Замовлення від Бобер Маслов @bobermaslov\n"
+        "Статус: pending\n"
         "+380999999999\n\n"
         "Початок оренди: 2024-01-01\n"
         "Кінець оренди: 2024-01-02\n"

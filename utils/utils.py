@@ -55,6 +55,7 @@ def format_order_message_for_admin(
     """
     order_text = (
         f"Замовлення від {user.name} {user.surname} @{user.username or 'N/A'}\n"
+        f"Статус: {order.status.value}\n"
         f"{user.phone_number or 'N/A'}\n\n"
     )
     order_text += build_order_message_body(order, items)
