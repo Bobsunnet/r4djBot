@@ -4,3 +4,4 @@ from .help import help_router
 from .order import order_router
 from .register import register_router
 from .start import start_router
+from .user_private import user_private_router

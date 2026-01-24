@@ -1,6 +1,5 @@
 import json
 import logging
-from datetime import date
 
 from aiogram import F, Router
 from aiogram.filters import StateFilter
@@ -24,6 +23,7 @@ from utils import messages as ms
 from utils import utils
 
 order_router = Router()
+
 logger = logging.getLogger(__name__)
 
 
@@ -77,6 +77,7 @@ async def order_cancel(message: Message, state: FSMContext):
 @order_router.message(StateFilter(OrderStates), F.text.casefold() == "back")
 async def order_back(message: Message, state: FSMContext):
     current_state = await state.get_state()
+
     if current_state == OrderStates.date:
         await message.answer(
             "Не можливо повернутися на попредній крок, так як це перший. Для виходу натисніть кнопку 'Cancel'"
@@ -101,10 +102,12 @@ async def order_back(message: Message, state: FSMContext):
 @order_router.message(OrderStates.date, F.text)
 async def order_date(message: Message, state: FSMContext):
     await state.set_state(OrderStates.work_days)
+
     try:
         start_date, end_date = utils.extract_date(message.text)
         start_date = utils.validate_date(start_date)
         end_date = utils.validate_date(end_date)
+
         if not start_date or not end_date:
             await state.set_state(OrderStates.date)
             await message.answer(
@@ -114,6 +117,7 @@ async def order_date(message: Message, state: FSMContext):
 
         await state.update_data({"start_date": start_date, "end_date": end_date})
         await message.answer(order_msgs["work_days"])
+
     except ValueError:
         await state.set_state(OrderStates.date)
         await message.answer(
@@ -129,7 +133,9 @@ async def order_date_bad_input(message: Message, state: FSMContext):
 @order_router.message(OrderStates.work_days, F.text)
 async def order_work_days(message: Message, state: FSMContext):
     await state.set_state(OrderStates.address)
+
     work_days = utils.work_days_validation(message.text)
+
     if work_days:
         if work_days > 365:
             await state.clear()
@@ -141,6 +147,7 @@ async def order_work_days(message: Message, state: FSMContext):
 
         await state.update_data(work_days=work_days)
         await message.answer(order_msgs["address"])
+
     else:
         await state.set_state(OrderStates.work_days)
         await message.answer(
@@ -170,6 +177,7 @@ async def order_comment(message: Message, state: FSMContext):
     await state.set_state(OrderStates.items)
     await state.update_data(comment=message.text)
     data = await state.get_data()
+
     await message.answer(
         order_msgs["items"],
         reply_markup=make_web_app_kb(data["work_days"]),
@@ -184,6 +192,7 @@ async def order_comment_bad_input(message: Message, state: FSMContext):
 @order_router.message(OrderStates.items, F.web_app_data)
 async def order_final(message: Message, state: FSMContext, session: AsyncSession):
     """Process order data sent from the Web App."""
+
     try:
         state_data = await state.get_data()
         web_app_data = json.loads(message.web_app_data.data)
@@ -204,19 +213,12 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
             address=state_data["address"],
             description=state_data["comment"],
         )
+
         order = await crud.create_order(session=session, order=order)
         logger.info(f"[ORDER] ORDER FROM {message.from_user.id} created: {order}")
-
-        order_text = utils.format_order_message(
-            start_date=order.date_start,
-            end_date=order.date_end,
-            count=order.work_days,
-            address=order.address,
-            comment=order.description,
-            name=user.name,
-            surname=user.surname,
-            username=user.username,
-            phone_number=user.phone_number,
+        order_text = utils.format_order_message_for_admin(
+            user=user,
+            order=order,
             items=items,
         )
 
@@ -231,6 +233,7 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
             )
 
             logger.info(f"Order from {message.from_user.id} sent to manager")
+
         except Exception as e:
             logger.error(f"Failed to send order to manager: {e}")
             user_reply_message = (
@@ -241,9 +244,11 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
     except json.JSONDecodeError:
         user_reply_message = ms.failed_to_send_order_message
         logger.error(f"Invalid JSON from web app: {message.web_app_data.data}")
+
     except Exception as e:
         user_reply_message = ms.failed_to_send_order_message
         logger.error(f"Error handling web app data: {e}")
+
     finally:
         await state.clear()
         await message.answer(user_reply_message, reply_markup=make_auth_kb())

@@ -10,6 +10,7 @@ from handlers import (
     register_router,
     start_router,
     unknown_command_router,
+    user_private_router,
 )
 from middlewares.db import DbSessionMiddleware
 from schedulers.schedulers import scheduler_setup
@@ -31,6 +32,7 @@ async def main():
     dp.include_router(contacts_router)
     dp.include_router(register_router)
     dp.include_router(order_router)
+    dp.include_router(user_private_router)
     dp.include_router(unknown_command_router)
 
     await bot.delete_webhook(drop_pending_updates=True)

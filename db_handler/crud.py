@@ -4,6 +4,7 @@ from typing import List
 from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from db_handler.models import Item, Order, User
 from db_handler.schemas.order import OrderCreate
@@ -37,3 +38,27 @@ async def create_order(session: AsyncSession, order: OrderCreate) -> Order:
     session.add(order)
     await session.commit()
     return order
+
+
+async def get_orders_by_userid(
+    session: AsyncSession, user_id: int
+) -> List[Order] | None:
+    """
+    Get all orders for a specific user by user telegram ID.
+
+    Args:
+        session: AsyncSession
+        user_id: User TELEGRAM ID !!!
+
+    Returns:
+        List[Order]
+    """
+    stmt = (
+        select(User).options(selectinload(User.orders)).where(User.user_id == user_id)
+    )
+    result: Result = await session.execute(stmt)
+    user = result.scalar_one_or_none()
+    if user is None:
+        return
+
+    return user.orders

@@ -1,6 +1,9 @@
 import re
 from datetime import datetime
 
+from db_handler.schemas.order import Order
+from db_handler.schemas.user import User
+
 
 def validate_name(name: str) -> bool:
     """
@@ -21,31 +24,40 @@ def format_welcome_message(name: str) -> str:
     return f"Вітаємо, {name}. Оберіть одну з команд /catalogue, /contacts, /order:"
 
 
-def format_order_message(
-    name: str,
-    surname: str,
-    username: str,
-    phone_number: str,
-    start_date: str,
-    end_date: str,
-    count: int,
-    address: str,
-    comment: str,
+def build_order_message_body(
+    order: Order,
+    items: list,
+) -> str:
+    """
+    Builds the order message with user details and items.
+    """
+    order_text = (
+        f"Початок оренди: {order.date_start}\n"
+        f"Кінець оренди: {order.date_end}\n"
+        f"Кількість днів роботи: {order.work_days}\n"
+        f"Адреса та час доставки/самовивіз: {order.address}\n\n"
+        f"Коментар: {order.description}\n\n"
+    )
+    for item in items:
+        quantity = item.get("quantity", 1)
+        order_text += f"• {item['name']} × {quantity} шт.\n"
+
+    return order_text
+
+
+def format_order_message_for_admin(
+    user: User,
+    order: Order,
     items: list,
 ) -> str:
     """
     Formats the order message with user details and items.
     """
-    order_text = f"Замовлення від {name} {surname} @{username or 'N/A'}\n"
-    order_text += f"{phone_number or 'N/A'}\n\n"
-    order_text += f"Початок оренди: {start_date}\n"
-    order_text += f"Кінець оренди: {end_date}\n"
-    order_text += f"Кількість днів роботи: {count}\n"
-    order_text += f"Адреса та час доставки/самовивіз: {address}\n\n"
-    order_text += f"Коментар: {comment}\n\n"
-    for item in items:
-        quantity = item.get("quantity", 1)
-        order_text += f"• {item['name']} × {quantity} шт.\n"
+    order_text = (
+        f"Замовлення від {user.name} {user.surname} @{user.username or 'N/A'}\n"
+        f"{user.phone_number or 'N/A'}\n\n"
+    )
+    order_text += build_order_message_body(order, items)
 
     return order_text
 
