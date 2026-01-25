@@ -9,5 +9,6 @@ order_item_association_table = Table(
     Column("order_id", ForeignKey("orders.id"), nullable=False),
     Column("item_hash_code", ForeignKey("items.hash_code"), nullable=False),
     Column("quantity", Integer, nullable=False),
+    Column("unit_price", Integer, nullable=False),
     UniqueConstraint("order_id", "item_hash_code", name="idx_unique_order_item"),
 )
