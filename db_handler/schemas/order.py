@@ -6,7 +6,7 @@ from db_handler.models.order import OrderStatus
 
 
 class OrderBase(BaseModel):
-    user_id: int
+    user_id: int  # tg user id
     date_start: date
     date_end: date
     work_days: int

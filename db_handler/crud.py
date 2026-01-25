@@ -6,7 +6,7 @@ from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
-from db_handler.models import Item, Order, OrderStatus, User
+from db_handler.models import Item, Order, OrderItemAssociation, OrderStatus, User
 from db_handler.schemas.order import OrderCreate
 from db_handler.schemas.user import UserCreate
 
@@ -38,6 +38,27 @@ async def create_order(session: AsyncSession, order: OrderCreate) -> Order:
     session.add(order)
     await session.commit()
     return order
+
+
+async def create_order_with_items(
+    session: AsyncSession, order: OrderCreate, items: List[dict]
+) -> Order:
+    order_db = Order(**order.model_dump())
+    session.add(order_db)
+    await session.flush()  # to get order.id
+
+    for item in items:
+        session.add(
+            OrderItemAssociation(
+                order_id=order_db.id,
+                item_hash_code=item.get("hash_code"),
+                quantity=item.get("quantity"),
+                unit_price=item.get("price"),
+            )
+        )
+
+    await session.commit()
+    return order_db
 
 
 async def get_pending_orders(session: AsyncSession) -> List[Order]:

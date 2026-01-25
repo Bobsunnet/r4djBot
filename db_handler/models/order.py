@@ -57,10 +57,10 @@ class Order(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="orders")
-    items: Mapped[list["Item"]] = relationship(
-        secondary="order_item_association",
-        back_populates="orders",
-    )
+    # items: Mapped[list["Item"]] = relationship(
+    #     secondary="order_item_association",
+    #     back_populates="orders",
+    # )
 
     items_details: Mapped[list["OrderItemAssociation"]] = relationship(
         back_populates="order",

@@ -26,10 +26,10 @@ class Item(Base):
         DateTime(timezone=True), nullable=True, index=True
     )
 
-    orders: Mapped[list["Order"]] = relationship(
-        secondary="order_item_association",
-        back_populates="items",
-    )
+    # orders: Mapped[list["Order"]] = relationship(
+    #     secondary="order_item_association",
+    #     back_populates="items",
+    # )
 
     orders_details: Mapped[list["OrderItemAssociation"]] = relationship(
         back_populates="item",

@@ -205,8 +205,8 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
             return
 
         user = await get_user_by_tg_id(session=session, user_id=message.from_user.id)
-        order = OrderCreate(
-            user_id=user.id,
+        order_dto = OrderCreate(
+            user_id=user.user_id,
             date_start=state_data["start_date"],
             date_end=state_data["end_date"],
             work_days=state_data["work_days"],
@@ -214,11 +214,13 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
             description=state_data["comment"],
         )
 
-        order = await crud.create_order(session=session, order=order)
-        logger.info(f"[ORDER] ORDER FROM {message.from_user.id} created: {order}")
+        order = await crud.create_order_with_items(
+            session=session, order=order_dto, items=items
+        )
+        logger.info(f"[ORDER] ORDER FROM {message.from_user.id} created: {order_dto}")
         order_text = utils.format_order_message_for_admin(
             user=user,
-            order=order,
+            order=order_dto,
             items=items,
         )
 
