@@ -1,9 +1,15 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Integer, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db_handler.models.base import Base
+
+from .order_item_association import order_item_association_table
+
+if TYPE_CHECKING:
+    from .order import Order
 
 
 class Item(Base):
@@ -19,4 +25,9 @@ class Item(Base):
     )
     last_seen_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=True, index=True
+    )
+
+    orders: Mapped[list["Order"]] = relationship(
+        secondary=order_item_association_table,
+        back_populates="items",
     )

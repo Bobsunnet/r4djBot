@@ -6,6 +6,8 @@ from sqlalchemy import Date, DateTime, Enum, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+from .item import Item
+from .order_item_association import order_item_association_table
 
 if TYPE_CHECKING:
     from .user import User
@@ -46,6 +48,10 @@ class Order(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="orders")
+    items: Mapped[list["Item"]] = relationship(
+        secondary=order_item_association_table,
+        back_populates="orders",
+    )
 
     def __repr__(self):
         return f"Order(id={self.id}, user_id={self.user_id}, date_start={self.date_start}, date_end={self.date_end}, status={self.status})"
