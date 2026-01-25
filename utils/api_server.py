@@ -27,6 +27,7 @@ async def get_items_json():
                 "desc": item.description,
                 "amount": item.amount,
                 "price": item.price * settings.price_multiplier,
+                "hash_code": item.hash_code,
             }
             for item in items
         ]

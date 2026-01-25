@@ -238,7 +238,9 @@ tg.MainButton.onClick(() => {
     const orderData = {
         items: cart.map(cartItem => ({
             name: cartItem.item.name,
-            quantity: cartItem.quantity
+            quantity: cartItem.quantity,
+            hash_code: cartItem.item.hash_code,
+            price: cartItem.item.price,
         }))
     };
     
