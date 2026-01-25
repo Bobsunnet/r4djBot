@@ -6,10 +6,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db_handler.models.base import Base
 
-from .order_item_association import order_item_association_table
-
 if TYPE_CHECKING:
     from .order import Order
+    from .order_item_association import OrderItemAssociation
 
 
 class Item(Base):
@@ -28,6 +27,10 @@ class Item(Base):
     )
 
     orders: Mapped[list["Order"]] = relationship(
-        secondary=order_item_association_table,
+        secondary="order_item_association",
         back_populates="items",
+    )
+
+    orders_details: Mapped[list["OrderItemAssociation"]] = relationship(
+        back_populates="item",
     )

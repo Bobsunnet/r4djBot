@@ -9,9 +9,5 @@ class ItemBase(BaseModel):
     price: int
 
 
-class ItemCreate(ItemBase):
-    pass
-
-
 class Item(ItemBase):
-    id: int
+    row_order: int
