@@ -101,11 +101,12 @@ async def get_orders_by_userid(
         List[Order]
     """
     stmt = (
-        select(User).options(selectinload(User.orders)).where(User.user_id == user_id)
+        select(Order)
+        .options(
+            selectinload(Order.items_details).joinedload(OrderItemAssociation.item)
+        )
+        .where(Order.user_id == user_id)
     )
     result: Result = await session.execute(stmt)
-    user = result.scalar_one_or_none()
-    if user is None:
-        return
-
-    return user.orders
+    orders = result.scalars().all()
+    return list(orders)

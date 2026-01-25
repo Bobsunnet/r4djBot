@@ -20,4 +20,12 @@ async def orders_list(message: Message, session: AsyncSession):
         return
 
     for order in orders:
-        await message.answer(utils.build_order_message_body(order, []))
+        items = []
+        for item in order.items_details:
+            items.append(
+                {
+                    "name": item.item.name,
+                    "quantity": item.quantity,
+                }
+            )
+        await message.answer(utils.build_order_message_body(order, items))
