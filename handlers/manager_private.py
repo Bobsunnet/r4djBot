@@ -1,4 +1,7 @@
+from contextlib import suppress
+
 from aiogram import F, Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -135,11 +138,14 @@ async def show_order_details(callback_query: CallbackQuery, session: AsyncSessio
             }
         )
     await callback_query.answer()
-    await callback_query.message.edit_text(
-        utils.format_order_message_for_admin(
-            user=order.user,
-            order=order,
-            items=items_list,
-        ),
-        reply_markup=make_admin_order_inline_kb(order_id=order.id, status=order.status),
-    )
+    with suppress(TelegramBadRequest):
+        await callback_query.message.edit_text(
+            utils.format_order_message_for_admin(
+                user=order.user,
+                order=order,
+                items=items_list,
+            ),
+            reply_markup=make_admin_order_inline_kb(
+                order_id=order.id, status=order.status
+            ),
+        )
