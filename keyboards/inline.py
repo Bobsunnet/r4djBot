@@ -3,28 +3,46 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from db_handler.models import OrderStatus
 
 
+class OrderInlineButton:
+    def __init__(self, text: str, callback_data: str):
+        self.text = text
+        self.callback_data = callback_data
+
+    def __call__(self, order_id: int):
+        return InlineKeyboardButton(
+            text=self.text,
+            callback_data=f"{self.callback_data}_{order_id}",
+        )
+
+
+confirm_btn = OrderInlineButton(text="Confirm", callback_data="confirm_order")
+cancel_btn = OrderInlineButton(text="Cancel", callback_data="cancel_order")
+delete_btn = OrderInlineButton(text="Delete", callback_data="delete_order")
+
+
 def create_pending_buttons(order_id: int):
     return [
-        InlineKeyboardButton(text="Confirm", callback_data=f"confirm_order_{order_id}"),
-        InlineKeyboardButton(text="Cancel", callback_data=f"cancel_order_{order_id}"),
+        confirm_btn(order_id),
+        cancel_btn(order_id),
     ]
 
 
 def create_active_buttons(order_id: int):
     return [
-        InlineKeyboardButton(text="Cancel", callback_data=f"cancel_order_{order_id}"),
+        cancel_btn(order_id),
     ]
 
 
 def create_completed_buttons(order_id: int):
     return [
-        InlineKeyboardButton(text="Delete", callback_data=f"delete_order_{order_id}"),
+        delete_btn(order_id),
     ]
 
 
 def create_cancelled_buttons(order_id: int):
     return [
-        InlineKeyboardButton(text="Delete", callback_data=f"delete_order_{order_id}"),
+        confirm_btn(order_id),
+        delete_btn(order_id),
     ]
 
 
