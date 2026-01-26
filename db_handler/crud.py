@@ -33,13 +33,6 @@ async def create_user(session: AsyncSession, user: UserCreate) -> User:
     return user
 
 
-async def create_order(session: AsyncSession, order: OrderCreate) -> Order:
-    order = Order(**order.model_dump())
-    session.add(order)
-    await session.commit()
-    return order
-
-
 async def create_order_with_items(
     session: AsyncSession, order: OrderCreate, items: List[dict]
 ) -> Order:
@@ -61,21 +54,20 @@ async def create_order_with_items(
     return order_db
 
 
-async def get_pending_orders(session: AsyncSession) -> List[Order]:
+async def get_orders_with_status(
+    session: AsyncSession, status: OrderStatus
+) -> List[Order]:
     """
-    Get all pending orders. With user loaded
+    Get all orders with a specific status. With user loaded
 
     Args:
         session: AsyncSession
+        status: OrderStatus enum value
 
     Returns:
         List[Order]
     """
-    stmt = (
-        select(Order)
-        .options(joinedload(Order.user))
-        .where(Order.status == OrderStatus.PENDING)
-    )
+    stmt = select(Order).options(joinedload(Order.user)).where(Order.status == status)
     result: Result = await session.execute(stmt)
     orders = result.scalars().all()
     return list(orders)
