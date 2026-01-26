@@ -79,6 +79,19 @@ async def get_order_by_id(session: AsyncSession, order_id: int) -> Order | None:
     return result.scalar_one_or_none()
 
 
+async def get_order_with_items(session: AsyncSession, order_id: int) -> Order | None:
+    stmt = (
+        select(Order)
+        .options(
+            joinedload(Order.user),
+            selectinload(Order.items_details).joinedload(OrderItemAssociation.item),
+        )
+        .where(Order.id == order_id)
+    )
+    result: Result = await session.execute(stmt)
+    return result.unique().scalar_one_or_none()
+
+
 async def get_orders_by_userid(
     session: AsyncSession, user_id: int
 ) -> List[Order] | None:
