@@ -54,18 +54,52 @@ async def completed_orders_list(message: Message, session: AsyncSession):
     )
 
 
-@manager_router.callback_query(F.data.startswith("confirm_order"))
-async def confirm_order(callback_query: CallbackQuery, session: AsyncSession):
+@manager_router.message(Command("cancelled_orders"))
+async def cancelled_orders_list(message: Message, session: AsyncSession):
+    await perform_order_list(
+        message=message, session=session, status=OrderStatus.CANCELLED
+    )
+
+
+async def change_order_status(
+    callback_query: CallbackQuery,
+    session: AsyncSession,
+    status: OrderStatus,
+):
     order_id = int(callback_query.data.split("_")[-1])
-
     order = await crud.get_order_by_id(session=session, order_id=order_id)
-
     if order is None:
         await callback_query.message.answer("Замовлення не знайдено")
         return
 
-    order.status = OrderStatus.ACTIVE
-
+    order.status = status
     await session.commit()
+    new_keyboard = make_admin_order_inline_kb(order_id=order.id, status=status)
+    await callback_query.message.edit_reply_markup(reply_markup=new_keyboard)
+    await callback_query.answer(
+        f"Статус замовлення {order_id} змінено на *{status.value}*",
+        parse_mode="Markdown",
+    )
 
-    await callback_query.message.answer(f"Замовлення {order_id} підтверджено")
+
+@manager_router.callback_query(F.data.startswith("confirm_order"))
+async def confirm_order(callback_query: CallbackQuery, session: AsyncSession):
+    await change_order_status(
+        callback_query=callback_query,
+        session=session,
+        status=OrderStatus.ACTIVE,
+    )
+
+
+@manager_router.callback_query(F.data.startswith("cancel_order"))
+async def cancel_order(callback_query: CallbackQuery, session: AsyncSession):
+    await change_order_status(
+        callback_query=callback_query,
+        session=session,
+        status=OrderStatus.CANCELLED,
+    )
+
+
+@manager_router.callback_query(F.data.startswith("delete_order"))
+async def delete_order(callback_query: CallbackQuery, session: AsyncSession):
+    await callback_query.message.answer("Видалення поки що не підтримується")
