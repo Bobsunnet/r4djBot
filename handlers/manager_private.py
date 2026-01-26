@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
 from db_handler import OrderStatus, crud
-from keyboards import make_admin_order_inline_kb
+from keyboards import make_admin_order_inline_kb, make_user_order_inline_kb
 from utils import utils
 
 manager_router = Router()
@@ -84,13 +84,14 @@ async def change_order_status(
     await callback_query.answer(order_status_text)
 
     user_notification_text = order_status_text + "\n\n"
-    user_notification_text += utils.build_order_message_body(
-        order=order, items=items_list
-    )
+    # user_notification_text += utils.build_order_message_body(
+    #     order=order, items=items_list
+    # )
 
     await callback_query.message.bot.send_message(
         chat_id=order.user.user_id,
         text=user_notification_text,
+        reply_markup=make_user_order_inline_kb(order_id=order.id, status=status),
     )
 
 
