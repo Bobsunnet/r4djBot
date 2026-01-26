@@ -19,6 +19,8 @@ confirm_btn = OrderInlineButton(text="Confirm", callback_data="confirm_order")
 cancel_btn = OrderInlineButton(text="Cancel", callback_data="cancel_order")
 delete_btn = OrderInlineButton(text="Delete", callback_data="delete_order")
 
+show_details_btn = OrderInlineButton(text="Show more", callback_data="show_details")
+
 
 def create_pending_buttons(order_id: int):
     return [
@@ -46,7 +48,7 @@ def create_cancelled_buttons(order_id: int):
     ]
 
 
-def create_order_buttons(order_id: int, status: OrderStatus):
+def create_admin_order_buttons(order_id: int, status: OrderStatus):
     status_dict = {
         OrderStatus.PENDING: create_pending_buttons,
         OrderStatus.ACTIVE: create_active_buttons,
@@ -58,5 +60,14 @@ def create_order_buttons(order_id: int, status: OrderStatus):
 
 def make_admin_order_inline_kb(order_id: int, status: OrderStatus):
     return InlineKeyboardMarkup(
-        inline_keyboard=[create_order_buttons(order_id, status)],
+        inline_keyboard=[
+            [show_details_btn(order_id)],
+            create_admin_order_buttons(order_id, status),
+        ],
+    )
+
+
+def make_user_order_inline_kb(order_id: int, status: OrderStatus):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[show_details_btn(order_id)]],
     )
