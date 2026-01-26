@@ -74,7 +74,7 @@ async def get_orders_with_status(
 
 
 async def get_order_by_id(session: AsyncSession, order_id: int) -> Order | None:
-    stmt = select(Order).where(Order.id == order_id)
+    stmt = select(Order).options(joinedload(Order.user)).where(Order.id == order_id)
     result: Result = await session.execute(stmt)
     return result.scalar_one_or_none()
 

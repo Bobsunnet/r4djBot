@@ -62,23 +62,24 @@ async def cancelled_orders_list(message: Message, session: AsyncSession):
 
 
 async def change_order_status(
-    callback_query: CallbackQuery,
-    session: AsyncSession,
-    status: OrderStatus,
+    callback_query: CallbackQuery, session: AsyncSession, status: OrderStatus
 ):
     order_id = int(callback_query.data.split("_")[-1])
     order = await crud.get_order_by_id(session=session, order_id=order_id)
     if order is None:
-        await callback_query.message.answer("Замовлення не знайдено")
+        await callback_query.answer("Замовлення не знайдено", show_alert=True)
         return
 
     order.status = status
     await session.commit()
+
     new_keyboard = make_admin_order_inline_kb(order_id=order.id, status=status)
-    await callback_query.message.edit_reply_markup(reply_markup=new_keyboard)
+    new_msg_text = utils.format_order_message_for_admin(
+        user=order.user, order=order, items=[]
+    )
+    await callback_query.message.edit_text(text=new_msg_text, reply_markup=new_keyboard)
     await callback_query.answer(
-        f"Статус замовлення {order_id} змінено на *{status.value}*",
-        parse_mode="Markdown",
+        f"Статус замовлення {order_id} змінено на {status.value}"
     )
 
 
@@ -102,4 +103,4 @@ async def cancel_order(callback_query: CallbackQuery, session: AsyncSession):
 
 @manager_router.callback_query(F.data.startswith("delete_order"))
 async def delete_order(callback_query: CallbackQuery, session: AsyncSession):
-    await callback_query.message.answer("Видалення поки що не підтримується")
+    await callback_query.answer("Видалення поки що не підтримується")
