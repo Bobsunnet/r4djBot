@@ -1,5 +1,7 @@
 from aiogram.filters import BaseFilter
-from aiogram.types import Message
+from aiogram.types import Message, TelegramObject
+
+from config import settings
 
 
 class TextOrCommand(BaseFilter):
@@ -10,3 +12,8 @@ class TextOrCommand(BaseFilter):
         if not message.text:
             return False
         return message.text.casefold().strip().lstrip("/") == self.text
+
+
+class IsManager(BaseFilter):
+    async def __call__(self, event: TelegramObject) -> bool:
+        return event.from_user.id == settings.telegram.manager_id

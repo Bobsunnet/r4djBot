@@ -4,7 +4,8 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db_handler import crud
-from utils import utils
+from keyboards.inline import make_user_order_inline_kb
+from utils.order_msg_builder import OrderMsgBuilderFactory
 
 user_private_router = Router()
 
@@ -20,12 +21,11 @@ async def orders_list(message: Message, session: AsyncSession):
         return
 
     for order in orders:
-        items = []
-        for item in order.items_details:
-            items.append(
-                {
-                    "name": item.item.name,
-                    "quantity": item.quantity,
-                }
-            )
-        await message.answer(utils.build_order_message_body(order, items))
+        await message.answer(
+            OrderMsgBuilderFactory.get_builder(
+                order, order.items_details
+            ).build_preview_message(),
+            reply_markup=make_user_order_inline_kb(
+                order_id=order.id, status=order.status.value
+            ),
+        )

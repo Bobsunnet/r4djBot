@@ -21,8 +21,10 @@ from keyboards.keyboard import (
 )
 from utils import messages as ms
 from utils import utils
+from utils.order_msg_builder import OrderMsgBuilderFactory
 
 order_router = Router()
+
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +79,6 @@ async def order_cancel(message: Message, state: FSMContext):
 @order_router.message(StateFilter(OrderStates), F.text.casefold() == "back")
 async def order_back(message: Message, state: FSMContext):
     current_state = await state.get_state()
-
     if current_state == OrderStates.date:
         await message.answer(
             "Не можливо повернутися на попредній крок, так як це перший. Для виходу натисніть кнопку 'Cancel'"
@@ -102,12 +103,10 @@ async def order_back(message: Message, state: FSMContext):
 @order_router.message(OrderStates.date, F.text)
 async def order_date(message: Message, state: FSMContext):
     await state.set_state(OrderStates.work_days)
-
     try:
         start_date, end_date = utils.extract_date(message.text)
         start_date = utils.validate_date(start_date)
         end_date = utils.validate_date(end_date)
-
         if not start_date or not end_date:
             await state.set_state(OrderStates.date)
             await message.answer(
@@ -117,7 +116,6 @@ async def order_date(message: Message, state: FSMContext):
 
         await state.update_data({"start_date": start_date, "end_date": end_date})
         await message.answer(order_msgs["work_days"])
-
     except ValueError:
         await state.set_state(OrderStates.date)
         await message.answer(
@@ -133,7 +131,6 @@ async def order_date_bad_input(message: Message, state: FSMContext):
 @order_router.message(OrderStates.work_days, F.text)
 async def order_work_days(message: Message, state: FSMContext):
     await state.set_state(OrderStates.address)
-
     work_days = utils.work_days_validation(message.text)
 
     if work_days:
@@ -147,7 +144,6 @@ async def order_work_days(message: Message, state: FSMContext):
 
         await state.update_data(work_days=work_days)
         await message.answer(order_msgs["address"])
-
     else:
         await state.set_state(OrderStates.work_days)
         await message.answer(
@@ -197,9 +193,6 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
         state_data = await state.get_data()
         web_app_data = json.loads(message.web_app_data.data)
         items = web_app_data.get("items", [])
-        logger.info(
-            f"[ORDER] ORDER request FROM {message.from_user.id} received: {items}"
-        )
         if not items:
             user_reply_message = "Ви не вибрали жодного товару"
             return
@@ -213,35 +206,32 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
             address=state_data["address"],
             description=state_data["comment"],
         )
-
         order = await crud.create_order_with_items(
             session=session, order=order_dto, items=items
         )
-        logger.info(f"[ORDER] ORDER FROM {message.from_user.id} created: {order_dto}")
-        order_text = utils.format_order_message_for_admin(
-            user=user,
-            order=order_dto,
-            items=items,
+        order_with_items = await crud.get_order_with_items(
+            session=session, order_id=order.id
         )
 
-        try:
-            await message.bot.send_message(
-                chat_id=settings.telegram.manager_id, text=order_text
-            )
-            user_reply_message = (
-                ms.order_processing_message
-                + ". Менеджер зв'яжеться з вами для підтвердження\n"
-                + "\n".join(order_text.split("\n")[2:])
-            )
+        logger.info(f"[ORDER] ORDER FROM {message.from_user.id} created: {order_dto}")
+        order_text = OrderMsgBuilderFactory.get_builder(
+            user=user,
+            order=order_with_items,
+            items=order_with_items.items_details,
+        ).build_full_message()
 
-            logger.info(f"Order from {message.from_user.id} sent to manager")
+        await message.bot.send_message(
+            chat_id=settings.telegram.manager_id, text=order_text
+        )
 
-        except Exception as e:
-            logger.error(f"Failed to send order to manager: {e}")
-            user_reply_message = (
-                ms.order_processing_message
-                + " але не було надіслане менеджеру. Зверніться до менеджера."
-            )
+        user_reply_message = (
+            ms.order_processing_message
+            + ". Менеджер зв'яжеться з вами для підтвердження\n\n"
+            + OrderMsgBuilderFactory.get_builder(
+                order=order_with_items,
+                items=order_with_items.items_details,
+            ).build_full_message()
+        )
 
     except json.JSONDecodeError:
         user_reply_message = ms.failed_to_send_order_message

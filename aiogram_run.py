@@ -3,16 +3,7 @@ import logging
 
 from create_bot import bot, dp, set_commands
 from db_handler.bulk_operations import bulk_insert_items, create_db
-from handlers import (
-    contacts_router,
-    help_router,
-    manager_router,
-    order_router,
-    register_router,
-    start_router,
-    unknown_command_router,
-    user_private_router,
-)
+from handlers import *
 from middlewares.db import DbSessionMiddleware
 from schedulers.schedulers import scheduler_setup
 
@@ -35,6 +26,7 @@ async def main():
     dp.include_router(order_router)
     dp.include_router(user_private_router)
     dp.include_router(manager_router)
+    dp.include_router(details_router)
     dp.include_router(unknown_command_router)
 
     await bot.delete_webhook(drop_pending_updates=True)

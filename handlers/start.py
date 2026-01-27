@@ -12,12 +12,18 @@ from keyboards import (
     make_wo_auth_kb,
 )
 from utils import messages as ms
-from utils.utils import format_welcome_message
 
 logger = logging.getLogger(__name__)
 
 
 start_router = Router()
+
+
+def format_welcome_message(name: str) -> str:
+    """
+    Formats the welcome message for the user.
+    """
+    return f"Вітаємо, {name}. Оберіть одну з команд /catalogue, /contacts, /order:"
 
 
 # --------------- MENU HANDLERS -----------------------------------
