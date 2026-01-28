@@ -13,6 +13,7 @@ from db_handler import crud
 from db_handler.crud import get_user_by_tg_id
 from db_handler.schemas.order import OrderCreate
 from filters import TextOrCommand
+from keyboards.inline import make_admin_order_inline_kb
 from keyboards.keyboard import (
     make_auth_kb,
     make_order_cancel_kb,
@@ -221,7 +222,11 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
         ).build_full_message()
 
         await message.bot.send_message(
-            chat_id=settings.telegram.manager_id, text=order_text
+            chat_id=settings.telegram.manager_id,
+            text=order_text,
+            reply_markup=make_admin_order_inline_kb(
+                order_id=order.id, status=order.status
+            ),
         )
 
         user_reply_message = (
