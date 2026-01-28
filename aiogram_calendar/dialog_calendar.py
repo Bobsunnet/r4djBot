@@ -1,11 +1,10 @@
 import calendar
 from datetime import datetime
 
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 
-from .schemas import DialogCalendarCallback, DialogCalAct, highlight, superscript
 from .common import GenericCalendar
+from .schemas import DialogCalAct, DialogCalendarCallback, highlight, superscript
 
 
 class DialogCalendar(GenericCalendar):
@@ -14,7 +13,6 @@ class DialogCalendar(GenericCalendar):
 
     async def _get_month_kb(self, year: int):
         """Creates an inline keyboard with months for specified year"""
-
         today = datetime.now()
         now_month, now_year = today.month, today.year
         now_year = today.year
@@ -29,7 +27,7 @@ class DialogCalendar(GenericCalendar):
             )
         )
         years_row.append(InlineKeyboardButton(
-            text=str(year) if year != today.year else highlight(year),
+            text="Back",
             callback_data=DialogCalendarCallback(act=DialogCalAct.start, year=year, month=-1, day=-1).pack()
         ))
         years_row.append(InlineKeyboardButton(text=" ", callback_data=self.ignore_callback))
@@ -46,18 +44,14 @@ class DialogCalendar(GenericCalendar):
         for month in range(1, 7):
             month6_row.append(InlineKeyboardButton(
                 text=highlight_month(),
-                callback_data=DialogCalendarCallback(
-                    act=DialogCalAct.set_m, year=year, month=month, day=-1
-                ).pack()
+                callback_data=DialogCalendarCallback(act=DialogCalAct.set_m, year=year, month=month, day=-1).pack()
             ))
         month12_row = []
 
         for month in range(7, 13):
             month12_row.append(InlineKeyboardButton(
                 text=highlight_month(),
-                callback_data=DialogCalendarCallback(
-                    act=DialogCalAct.set_m, year=year, month=month, day=-1
-                ).pack()
+                callback_data=DialogCalendarCallback(act=DialogCalAct.set_m, year=year, month=month, day=-1).pack()
             ))
 
         kb.append(month6_row)
@@ -142,35 +136,29 @@ class DialogCalendar(GenericCalendar):
     ) -> InlineKeyboardMarkup:
         today = datetime.now()
         now_year = today.year
-
         if month:
             return await self._get_days_kb(year, month)
         kb = []
         # inline_kb = InlineKeyboardMarkup(row_width=5)
         # first row - years
         years_row = []
-        for value in range(year - 2, year + 3):
+        for value in range(now_year - 1, now_year + 2):
             years_row.append(InlineKeyboardButton(
                 text=str(value) if value != now_year else highlight(value),
                 callback_data=DialogCalendarCallback(act=DialogCalAct.set_y, year=value, month=-1, day=-1).pack()
             ))
         kb.append(years_row)
-        # nav buttons
         nav_row = []
-        nav_row.append(InlineKeyboardButton(
-            text='<<',
-            callback_data=DialogCalendarCallback(act=DialogCalAct.prev_y, year=year, month=-1, day=-1).pack()
-        ))
-        nav_row.append(InlineKeyboardButton(
-            text=self._labels.cancel_caption,
-            callback_data=DialogCalendarCallback(act=DialogCalAct.cancel, year=year, month=1, day=1).pack()
-        ))
-        nav_row.append(InlineKeyboardButton(
-            text='>>',
-            callback_data=DialogCalendarCallback(act=DialogCalAct.next_y, year=year, month=1, day=1).pack()
-        ))
+        nav_row.append(
+            InlineKeyboardButton(
+                text=self._labels.cancel_caption,
+                callback_data=DialogCalendarCallback(
+                    act=DialogCalAct.cancel, year=year, month=1, day=1
+                ).pack(),
+            )
+        )
         kb.append(nav_row)
-        return InlineKeyboardMarkup(row_width=5, inline_keyboard=kb)
+        return InlineKeyboardMarkup(row_width=3, inline_keyboard=kb)
 
     async def process_selection(self, query: CallbackQuery, data: DialogCalendarCallback) -> tuple:
         return_data = (False, None)
@@ -179,15 +167,16 @@ class DialogCalendar(GenericCalendar):
         if data.act == DialogCalAct.set_y:
             await query.message.edit_reply_markup(reply_markup=await self._get_month_kb(int(data.year)))
         if data.act == DialogCalAct.prev_y:
-            new_year = int(data.year) - 5
+            new_year = int(data.year) - 3
             await query.message.edit_reply_markup(reply_markup=await self.start_calendar(year=new_year))
         if data.act == DialogCalAct.next_y:
-            new_year = int(data.year) + 5
+            new_year = int(data.year) + 3
             await query.message.edit_reply_markup(reply_markup=await self.start_calendar(year=new_year))
         if data.act == DialogCalAct.start:
             await query.message.edit_reply_markup(reply_markup=await self.start_calendar(int(data.year)))
         if data.act == DialogCalAct.set_m:
-            await query.message.edit_reply_markup(reply_markup=await self._get_days_kb(int(data.year), int(data.month)))
+            # await query.message.edit_reply_markup(reply_markup=await self._get_days_kb(int(data.year), int(data.month)))
+            return await self.process_month_select(data, query)
         if data.act == DialogCalAct.day:
 
             return await self.process_day_select(data, query)

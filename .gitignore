@@ -222,3 +222,4 @@ sandbox_run.py
 practice_db_queries.py
 check.sql
 aiogram_calendar/tests/
+calendar_bot.py

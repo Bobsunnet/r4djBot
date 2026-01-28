@@ -1,9 +1,8 @@
-from typing import Optional
 from enum import Enum
-
-from pydantic import BaseModel, conlist, Field
+from typing import Optional
 
 from aiogram.filters.callback_data import CallbackData
+from pydantic import BaseModel, Field, conlist
 
 
 class SimpleCalAct(str, Enum):
@@ -49,8 +48,14 @@ class CalendarLabels(BaseModel):
     months: conlist(str, max_length=12, min_length=12) = [
         "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
     ]
-    cancel_caption: str = Field(default='Cancel', description='Caprion for Cancel button')
-    today_caption: str = Field(default='Today', description='Caprion for Cancel button')
+    cancel_caption: str = Field(
+        default="Cancel",
+        description="Caption for Cancel button",
+    )
+    today_caption: str = Field(
+        default="Today",
+        description="Caption for Today button",
+    )
 
 
 HIGHLIGHT_FORMAT = "[{}]"

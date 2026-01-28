@@ -1,8 +1,8 @@
 import calendar
 import locale
+from datetime import datetime
 
 from aiogram.types import User
-from datetime import datetime
 
 from .schemas import CalendarLabels
 
@@ -68,3 +68,8 @@ class GenericCalendar:
             return False, None
         await query.message.delete_reply_markup()  # removing inline keyboard
         return True, date
+
+    async def process_month_select(self, data, query):
+        month = datetime(int(data.year), int(data.month), 1)
+        await query.message.delete_reply_markup()
+        return True, month
