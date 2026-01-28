@@ -12,7 +12,10 @@ logger = logging.getLogger(__name__)
 
 bot = Bot(
     token=settings.telegram.bot_token,
-    default=DefaultBotProperties(parse_mode="HTML"),
+    default=DefaultBotProperties(
+        parse_mode="HTML",
+        disable_notification=settings.telegram.disable_notification,
+    ),
 )
 dp = Dispatcher(storage=MemoryStorage())
 

@@ -16,6 +16,9 @@ TRUE_VALUES = ("true", "1")
 class TelegramSettings(BaseSettings):
     bot_token: str = os.getenv("BOT_TOKEN")
     manager_id: int = int(os.getenv("MANAGER_ID", "0"))
+    disable_notification: bool = (
+        os.getenv("DISABLE_NOTIFICATION", "False").lower() in TRUE_VALUES
+    )
 
 
 class CacheSettings(BaseSettings):

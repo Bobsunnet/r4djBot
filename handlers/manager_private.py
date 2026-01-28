@@ -1,7 +1,4 @@
-from contextlib import suppress
-
 from aiogram import F, Router
-from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db_handler import OrderStatus, crud
 from filters.custom import IsManager
 from keyboards import make_admin_order_inline_kb, make_user_order_inline_kb
-from utils import utils
 from utils.order_msg_builder import OrderMsgBuilderFactory
 
 manager_router = Router()
