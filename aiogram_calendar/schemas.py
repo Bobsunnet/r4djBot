@@ -4,6 +4,8 @@ from typing import Optional
 from aiogram.filters.callback_data import CallbackData
 from pydantic import BaseModel, Field, conlist
 
+from db_handler import OrderStatus
+
 
 class SimpleCalAct(str, Enum):
     ignore = 'IGNORE'
@@ -40,6 +42,11 @@ class SimpleCalendarCallback(CalendarCallback, prefix="simple_calendar"):
 
 class DialogCalendarCallback(CalendarCallback, prefix="dialog_calendar"):
     act: DialogCalAct
+
+
+class ManagerCalendarCallback(CalendarCallback, prefix="manager_calendar"):
+    act: DialogCalAct
+    status: Optional[OrderStatus] = None
 
 
 class CalendarLabels(BaseModel):

@@ -1,22 +1,35 @@
 from datetime import datetime
+from typing import Optional
 
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 
+from db_handler import OrderStatus
+
 from .common import GenericCalendar
-from .schemas import DialogCalAct, DialogCalendarCallback, highlight
+from .schemas import (
+    DialogCalAct,
+    DialogCalendarCallback,
+    ManagerCalendarCallback,
+    highlight,
+)
 
 
 class DialogCalendar(GenericCalendar):
+
+    ignore_callback = DialogCalendarCallback(act=DialogCalAct.ignore).pack()    # placeholder for no answer buttons
+
     def __init__(
         self,
         orders_count_dict: dict[tuple[int, int], int] = None,
+        status: Optional[OrderStatus] = None,
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.orders_count_dict = orders_count_dict
-
-    ignore_callback = DialogCalendarCallback(act=DialogCalAct.ignore).pack()    # placeholder for no answer buttons
+        self.status = status
+        self.is_manager = bool(self.status)
+        self.callback_builder = ManagerCalendarCallback if self.is_manager else DialogCalendarCallback    
 
     async def _get_month_kb(self, year: int):
         """Creates an inline keyboard with months for specified year"""
@@ -29,12 +42,17 @@ class DialogCalendar(GenericCalendar):
         years_row.append(
             InlineKeyboardButton(
                 text=self._labels.cancel_caption,
-                callback_data=DialogCalendarCallback(act=DialogCalAct.cancel, year=year, month=1, day=1).pack()
+                callback_data=self.callback_builder(
+                    act=DialogCalAct.cancel, year=year, month=1, day=1, status=self.status
+                ).pack()
             )
         )
+        print(self.status)
         years_row.append(InlineKeyboardButton(
             text="Back",
-            callback_data=DialogCalendarCallback(act=DialogCalAct.start, year=year, month=-1, day=-1).pack()
+            callback_data=self.callback_builder(
+                act=DialogCalAct.start, year=year, month=-1, day=-1, status=self.status
+            ).pack()
         ))
         years_row.append(InlineKeyboardButton(text=" ", callback_data=self.ignore_callback))
         kb.append(years_row)
@@ -53,7 +71,9 @@ class DialogCalendar(GenericCalendar):
             for month in range(i, i + 3):
                 month_row.append(InlineKeyboardButton(
                     text=month_orders_count(month),
-                    callback_data=DialogCalendarCallback(act=DialogCalAct.set_m, year=year, month=month, day=-1).pack()
+                    callback_data=self.callback_builder(
+                        act=DialogCalAct.set_m, year=year, month=month, day=-1, status=self.status
+                    ).pack()
                 ))
             kb.append(month_row)
 
@@ -71,15 +91,17 @@ class DialogCalendar(GenericCalendar):
         for value in range(now_year - 1, now_year + 2):
             years_row.append(InlineKeyboardButton(
                 text=str(value) if value != now_year else highlight(value),
-                callback_data=DialogCalendarCallback(act=DialogCalAct.set_y, year=value, month=-1, day=-1).pack()
+                callback_data=self.callback_builder(
+                    act=DialogCalAct.set_y, year=value, month=-1, day=-1, status=self.status
+                ).pack()
             ))
         kb.append(years_row)
         nav_row = []
         nav_row.append(
             InlineKeyboardButton(
                 text=self._labels.cancel_caption,
-                callback_data=DialogCalendarCallback(
-                    act=DialogCalAct.cancel, year=year, month=1, day=1
+                callback_data=self.callback_builder(
+                    act=DialogCalAct.cancel, year=year, month=1, day=1, status=self.status
                 ).pack(),
             )
         )
@@ -92,12 +114,12 @@ class DialogCalendar(GenericCalendar):
             await query.answer(cache_time=60)
         if data.act == DialogCalAct.set_y:
             await query.message.edit_reply_markup(reply_markup=await self._get_month_kb(int(data.year)))
-        if data.act == DialogCalAct.prev_y:
-            new_year = int(data.year) - 3
-            await query.message.edit_reply_markup(reply_markup=await self.start_calendar(year=new_year))
-        if data.act == DialogCalAct.next_y:
-            new_year = int(data.year) + 3
-            await query.message.edit_reply_markup(reply_markup=await self.start_calendar(year=new_year))
+        # if data.act == DialogCalAct.prev_y:
+        #     new_year = int(data.year) - 3
+        #     await query.message.edit_reply_markup(reply_markup=await self.start_calendar(year=new_year))
+        # if data.act == DialogCalAct.next_y:
+        #     new_year = int(data.year) + 3
+            # await query.message.edit_reply_markup(reply_markup=await self.start_calendar(year=new_year))
         if data.act == DialogCalAct.start:
             await query.message.edit_reply_markup(reply_markup=await self.start_calendar(int(data.year)))
         if data.act == DialogCalAct.set_m:
