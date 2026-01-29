@@ -7,6 +7,7 @@ from db_handler import OrderStatus, crud
 from filters.custom import IsManager
 from keyboards import make_admin_order_inline_kb, make_user_order_inline_kb
 from utils.order_msg_builder import OrderMsgBuilderFactory
+from config import settings
 
 manager_router = Router()
 manager_router.message.filter(IsManager())
@@ -88,6 +89,7 @@ async def change_order_status(
         chat_id=order.user.user_id,
         text=user_notification_text,
         reply_markup=make_user_order_inline_kb(order_id=order.id, status=status),
+        disable_notification=settings.telegram.disable_notification,
     )
 
 

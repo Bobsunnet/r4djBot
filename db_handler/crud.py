@@ -1,7 +1,8 @@
+from datetime import datetime
 from logging import getLogger
 from typing import List
 
-from sqlalchemy import select
+from sqlalchemy import extract, select
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
@@ -111,6 +112,27 @@ async def get_orders_by_userid(
             selectinload(Order.items_details).joinedload(OrderItemAssociation.item)
         )
         .where(Order.user_id == user_id)
+    )
+    result: Result = await session.execute(stmt)
+    orders = result.scalars().all()
+    return list(orders)
+
+
+async def get_orders_by_userid_and_date_start(
+    session: AsyncSession,
+    user_id: int,
+    date: datetime,
+):
+    stmt = (
+        select(Order)
+        .options(
+            selectinload(Order.items_details).joinedload(OrderItemAssociation.item)
+        )
+        .where(
+            Order.user_id == user_id,
+            extract("year", Order.date_start) == date.year,
+            extract("month", Order.date_start) == date.month,
+        )
     )
     result: Result = await session.execute(stmt)
     orders = result.scalars().all()

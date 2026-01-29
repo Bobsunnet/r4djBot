@@ -1,5 +1,8 @@
 import re
+from collections import Counter
 from datetime import datetime
+
+from db_handler.models import Order
 
 
 def validate_name(name: str) -> bool:
@@ -53,3 +56,10 @@ def validate_date(date_str: str) -> bool:
             pass
 
     return None
+
+
+def create_orders_count_dict(orders: list[Order]) -> dict[tuple[int, int], int]:
+    orders_count_dict = Counter([
+        (order.date_start.year, order.date_start.month) for order in orders
+    ])
+    return orders_count_dict
