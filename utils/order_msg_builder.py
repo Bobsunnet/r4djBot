@@ -1,22 +1,15 @@
-from config import settings
 from db_handler.models import Order, OrderItemAssociation, User
 
 
-class OrderMsgBuilderFactory:
-    @staticmethod
-    def get_builder(order: Order, items: list[OrderItemAssociation], user: User = None):
-        if user:
-            return OrderAdminMsgBuilder(order, items, user)
-        return OrderUserMsgBuilder(order, items)
-
-
 class OrderBaseMsgBuilder:
+    """Base class for building order messages with common formatting logic."""
+    
     def __init__(self, order: Order, items: list[OrderItemAssociation]):
         self.order = order
         self.items = items
 
     def get_header_text(self) -> str:
-        return f"Замовлення #{self.order.id}."
+        return f"Замовлення #{self.order.id}.\n"
 
     def _order_preview_message(self) -> str:
         order_text = (
@@ -51,14 +44,13 @@ class OrderBaseMsgBuilder:
 
 
 class OrderUserMsgBuilder(OrderBaseMsgBuilder):
-    def __init__(self, order: Order, items: list[OrderItemAssociation]):
-        super().__init__(order, items)
-
-    def get_header_text(self) -> str:
-        return f"Замовлення #{self.order.id}.\n"
+    """Message builder for user-facing order messages (no contact details)."""
+    pass
 
 
 class OrderAdminMsgBuilder(OrderBaseMsgBuilder):
+    """Message builder for admin-facing order messages with user contact details."""
+    
     def __init__(self, order: Order, items: list[OrderItemAssociation], user: User):
         super().__init__(order, items)
         self.user = user

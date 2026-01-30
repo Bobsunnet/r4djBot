@@ -9,7 +9,7 @@ from db_handler import crud
 from db_handler.models import Order
 from filters.custom import IsManager
 from keyboards import make_admin_order_inline_kb, make_user_order_inline_kb
-from utils.order_msg_builder import OrderMsgBuilderFactory
+from utils.order_msg_builder import OrderAdminMsgBuilder, OrderUserMsgBuilder
 
 details_router = Router()
 
@@ -38,7 +38,7 @@ async def show_order_details_manager(
     await callback_query.answer()
     with suppress(TelegramBadRequest):
         await callback_query.message.edit_text(
-            OrderMsgBuilderFactory.get_builder(
+            OrderAdminMsgBuilder(
                 order=order,
                 items=order.items_details,
                 user=order.user,
@@ -57,7 +57,7 @@ async def show_order_details_user(callback_query: CallbackQuery, session: AsyncS
 
     await callback_query.answer(cache_time=10)
     with suppress(TelegramBadRequest):
-        order_full_text = OrderMsgBuilderFactory.get_builder(
+        order_full_text = OrderUserMsgBuilder(
             order=order, items=order.items_details
         ).build_full_message()
         await callback_query.message.edit_text(

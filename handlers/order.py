@@ -22,7 +22,7 @@ from keyboards.keyboard import (
 )
 from utils import messages as ms
 from utils import utils
-from utils.order_msg_builder import OrderMsgBuilderFactory
+from utils.order_msg_builder import OrderAdminMsgBuilder, OrderUserMsgBuilder
 
 order_router = Router()
 
@@ -215,10 +215,10 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
         )
 
         logger.info(f"[ORDER] ORDER FROM {message.from_user.id} created: {order_dto}")
-        order_text = OrderMsgBuilderFactory.get_builder(
-            user=user,
+        order_text = OrderAdminMsgBuilder(
             order=order_with_items,
             items=order_with_items.items_details,
+            user=user,
         ).build_full_message()
 
         await message.bot.send_message(
@@ -232,7 +232,7 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
         user_reply_message = (
             ms.order_processing_message
             + ". Менеджер зв'яжеться з вами для підтвердження\n\n"
-            + OrderMsgBuilderFactory.get_builder(
+            + OrderUserMsgBuilder(
                 order=order_with_items,
                 items=order_with_items.items_details,
             ).build_full_message()

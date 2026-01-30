@@ -12,7 +12,7 @@ from config import settings
 from db_handler import OrderStatus, crud
 from filters.custom import IsManager
 from keyboards import make_admin_order_inline_kb, make_user_order_inline_kb
-from utils.order_msg_builder import OrderMsgBuilderFactory
+from utils.order_msg_builder import OrderAdminMsgBuilder
 from utils.utils import create_orders_count_dict
 
 manager_router = Router()
@@ -64,7 +64,7 @@ async def process_order_calendar_manager(
 
     for order in orders_for_month:
         await callback_query.message.answer(
-            OrderMsgBuilderFactory.get_builder(
+            OrderAdminMsgBuilder(
                 order=order,
                 items=order.items_details,
                 user=order.user,
@@ -118,7 +118,7 @@ async def change_order_status(
     await session.commit()
 
     new_keyboard = make_admin_order_inline_kb(order_id=order.id, status=status)
-    new_msg_text = OrderMsgBuilderFactory.get_builder(
+    new_msg_text = OrderAdminMsgBuilder(
         order=order,
         items=[],
         user=order.user,
