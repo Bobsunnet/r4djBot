@@ -1,6 +1,6 @@
 import re
 from collections import Counter
-from datetime import datetime
+from datetime import date, datetime
 
 from db_handler.models import Order
 
@@ -45,9 +45,9 @@ def is_valid_number(phone_number: str) -> bool:
     )
 
 
-def validate_date(date_str: str) -> bool:
+def validate_date(date_str: str) -> date| None:
     """validate date string in format some general formats"""
-    formats = ["%d.%m.%y", "%d.%m.%Y", "%d-%m-%y", "%d-%m-%Y"]
+    formats = ["%d.%m.%Y", "%d.%m.%y", "%d-%m-%y", "%d-%m-%Y"]
 
     for format in formats:
         try:

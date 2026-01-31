@@ -7,6 +7,7 @@ from db_handler import OrderStatus
 
 from .common import GenericCalendar
 from .schemas import (
+    CalendarCallback,
     DialogCalAct,
     DialogCalendarCallback,
     ManagerCalendarCallback,
@@ -47,7 +48,6 @@ class DialogCalendar(GenericCalendar):
                 ).pack()
             )
         )
-        print(self.status)
         years_row.append(InlineKeyboardButton(
             text="Back",
             callback_data=self.callback_builder(
@@ -108,7 +108,7 @@ class DialogCalendar(GenericCalendar):
         kb.append(nav_row)
         return InlineKeyboardMarkup(row_width=3, inline_keyboard=kb)
 
-    async def process_selection(self, query: CallbackQuery, data: DialogCalendarCallback) -> tuple:
+    async def process_selection(self, query: CallbackQuery, data: CalendarCallback) -> tuple:
         return_data = (False, None)
         if data.act == DialogCalAct.ignore:
             await query.answer(cache_time=60)
