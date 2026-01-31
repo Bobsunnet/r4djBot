@@ -1,6 +1,10 @@
+import enum
+
 from aiogram import F, Router
 from aiogram.filters import Command
+from aiogram.filters.callback_data import CallbackData
 from aiogram.types import CallbackQuery, Message
+from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardButton
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from aiogram_calendar import (
@@ -11,13 +15,29 @@ from aiogram_calendar import (
 from config import settings
 from db_handler import OrderStatus, crud
 from filters.custom import IsManager
-from keyboards import make_admin_order_inline_kb, make_user_order_inline_kb
+from keyboards import (
+    OrderAction,
+    OrderCallbackData,
+    make_admin_order_inline_kb,
+    make_user_order_inline_kb,
+)
 from utils.order_msg_builder import OrderAdminMsgBuilder
 from utils.utils import create_orders_count_dict
 
 manager_router = Router()
 manager_router.message.filter(IsManager())
 manager_router.callback_query.filter(IsManager())
+
+
+class ConfirmationEnum(enum.Enum):
+    YES = 'yes'
+    NO = 'no'
+
+
+class DeleteOrderCallbackData(CallbackData, prefix="delete_order"):
+    order_id: int
+    confirmation: ConfirmationEnum
+    status: OrderStatus
 
 
 async def orders_with_status_list(
@@ -106,9 +126,9 @@ async def cancelled_orders_list(message: Message, session: AsyncSession):
 
 
 async def change_order_status(
-    callback_query: CallbackQuery, session: AsyncSession, status: OrderStatus
+    callback_query: CallbackQuery, callback_data: OrderCallbackData, session: AsyncSession, status: OrderStatus
 ):
-    order_id = int(callback_query.data.split("_")[-1])
+    order_id = callback_data.order_id
     order = await crud.get_order_by_id(session=session, order_id=order_id)
     if order is None:
         await callback_query.answer("Замовлення не знайдено", show_alert=True)
@@ -138,24 +158,80 @@ async def change_order_status(
     )
 
 
-@manager_router.callback_query(F.data.startswith("confirm_order"))
-async def confirm_order(callback_query: CallbackQuery, session: AsyncSession):
+@manager_router.callback_query(OrderCallbackData.filter(F.action == OrderAction.CONFIRM))
+async def confirm_order(callback_query: CallbackQuery, callback_data: OrderCallbackData, session: AsyncSession):
     await change_order_status(
         callback_query=callback_query,
+        callback_data=callback_data,
         session=session,
         status=OrderStatus.ACTIVE,
     )
 
 
-@manager_router.callback_query(F.data.startswith("cancel_order"))
-async def cancel_order(callback_query: CallbackQuery, session: AsyncSession):
+@manager_router.callback_query(OrderCallbackData.filter(F.action == OrderAction.CANCEL))
+async def cancel_order(callback_query: CallbackQuery, callback_data: OrderCallbackData, session: AsyncSession):
     await change_order_status(
         callback_query=callback_query,
+        callback_data=callback_data,
         session=session,
         status=OrderStatus.CANCELLED,
     )
 
 
-@manager_router.callback_query(F.data.startswith("delete_order"))
-async def delete_order(callback_query: CallbackQuery, session: AsyncSession):
-    await callback_query.answer("Видалення поки що не підтримується")
+@manager_router.callback_query(DeleteOrderCallbackData.filter(F.confirmation == ConfirmationEnum.YES))
+async def confirm_delete_order(callback_query: CallbackQuery, callback_data: DeleteOrderCallbackData, session: AsyncSession):
+    order_id = callback_data.order_id
+    order = await crud.get_order_by_id(session=session, order_id=order_id)
+    if order is None:
+        await callback_query.answer("Замовлення не знайдено", show_alert=True)
+        return
+    
+    await crud.delete_order(session=session, order_id=order_id)
+    await callback_query.answer("Замовлення видалено", show_alert=True)
+    await callback_query.message.delete()
+
+
+@manager_router.callback_query(DeleteOrderCallbackData.filter(F.confirmation == ConfirmationEnum.NO))
+async def cancel_delete_order(callback_query: CallbackQuery, callback_data: DeleteOrderCallbackData, session: AsyncSession):
+    order_id = callback_data.order_id
+    order = await crud.get_order_by_id(session=session, order_id=order_id)
+    if order is None:
+        await callback_query.answer("Замовлення не знайдено", show_alert=True)
+        return
+    
+    new_msg_text = OrderAdminMsgBuilder(
+        order=order,
+        items=[],
+        user=order.user,
+    ).build_full_message()
+    
+    kb = make_admin_order_inline_kb(order_id=order_id, status=callback_data.status)
+    await callback_query.message.edit_text(text=new_msg_text, reply_markup=kb)
+
+
+@manager_router.callback_query(OrderCallbackData.filter(F.action == OrderAction.DELETE))
+async def delete_order(callback_query: CallbackQuery, callback_data: OrderCallbackData, session: AsyncSession):
+    order_id = callback_data.order_id
+    # old_msg = callback_query.message.text
+    builder = InlineKeyboardBuilder()
+    builder.add(
+        InlineKeyboardButton(
+            text="Так, видалити",
+            callback_data=DeleteOrderCallbackData(
+                order_id=order_id,
+                status=OrderStatus.CANCELLED,
+                confirmation=ConfirmationEnum.YES,
+            ).pack(),
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(
+            text="Ні, скасувати",
+            callback_data=DeleteOrderCallbackData(
+                order_id=order_id,
+                status=OrderStatus.CANCELLED,
+                confirmation=ConfirmationEnum.NO,
+            ).pack(),
+        )
+    )
+    await callback_query.message.edit_text(f"Ви впевнені, що хочете видалити замовлення #{order_id} ?", reply_markup=builder.as_markup())

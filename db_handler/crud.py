@@ -2,7 +2,7 @@ from datetime import datetime
 from logging import getLogger
 from typing import List
 
-from sqlalchemy import extract, select
+from sqlalchemy import delete, extract, select
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
@@ -158,3 +158,16 @@ async def get_orders_with_status_and_date_start(
     result: Result = await session.execute(stmt)
     orders = result.scalars().all()
     return list(orders)
+
+
+async def delete_order(session: AsyncSession, order_id: int) -> None:
+    """
+    Delete an order and its associated items manually.
+    Necessary because database cascade deletion is turned off.
+    """
+    order = await session.scalar(select(Order).where(Order.id == order_id))
+    if order:
+        await session.delete(order)
+        await session.commit()
+
+    

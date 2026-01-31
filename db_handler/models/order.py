@@ -15,7 +15,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
-from .item import Item
 
 if TYPE_CHECKING:
     from .order_item_association import OrderItemAssociation
@@ -57,13 +56,9 @@ class Order(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="orders")
-    # items: Mapped[list["Item"]] = relationship(
-    #     secondary="order_item_association",
-    #     back_populates="orders",
-    # )
-
     items_details: Mapped[list["OrderItemAssociation"]] = relationship(
         back_populates="order",
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self):

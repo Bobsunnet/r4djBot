@@ -1,25 +1,38 @@
+import enum
+
+from aiogram.filters.callback_data import CallbackData
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from db_handler.models import OrderStatus
 
 
+class OrderAction(enum.Enum):
+    CONFIRM = "confirm"
+    CANCEL = "cancel"
+    DELETE = "delete"
+
+
+class OrderCallbackData(CallbackData, prefix="order"):
+    order_id: int
+    action: OrderAction
+
+
 class OrderInlineButton:
-    def __init__(self, text: str, callback_data: str):
+    def __init__(self, text: str, action: OrderAction):
         self.text = text
-        self.callback_data = callback_data
+        self.action = action
 
     def __call__(self, order_id: int):
-        return InlineKeyboardButton(
+        btn = InlineKeyboardButton(
             text=self.text,
-            callback_data=f"{self.callback_data}_{order_id}",
+            callback_data=OrderCallbackData(order_id=order_id, action=self.action).pack(),
         )
+        return btn
 
 
-confirm_btn = OrderInlineButton(text="Confirm", callback_data="confirm_order")
-cancel_btn = OrderInlineButton(text="Cancel", callback_data="cancel_order")
-delete_btn = OrderInlineButton(text="Delete", callback_data="delete_order")
-
-show_details_btn = OrderInlineButton(text="Show more", callback_data="show_details")
+confirm_btn = OrderInlineButton(text="Confirm", action=OrderAction.CONFIRM)
+cancel_btn = OrderInlineButton(text="Cancel", action=OrderAction.CANCEL)
+delete_btn = OrderInlineButton(text="Delete", action=OrderAction.DELETE)
 
 
 def create_pending_buttons(order_id: int):
@@ -61,7 +74,10 @@ def create_admin_order_buttons(order_id: int, status: OrderStatus):
 def make_admin_order_inline_kb(order_id: int, status: OrderStatus):
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [show_details_btn(order_id)],
+            [InlineKeyboardButton(
+            text="Show more",
+            callback_data=f"show_details_{order_id}",
+        )],
             create_admin_order_buttons(order_id, status),
         ],
     )
@@ -69,5 +85,8 @@ def make_admin_order_inline_kb(order_id: int, status: OrderStatus):
 
 def make_user_order_inline_kb(order_id: int, status: OrderStatus):
     return InlineKeyboardMarkup(
-        inline_keyboard=[[show_details_btn(order_id)]],
+        inline_keyboard=[[InlineKeyboardButton(
+            text="Show more",
+            callback_data=f"show_details_{order_id}",
+        )]],
     )
