@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from create_bot import bot, dp, set_commands
-from db_handler.bulk_operations import bulk_insert_items, create_db
+from db_handler.bulk_operations import bulk_insert_items
 from handlers import *
 from middlewares.db import DbSessionMiddleware
 from schedulers.schedulers import setup_scheduler
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 async def startup_db():
-    await create_db()
+    # await create_db()
     await bulk_insert_items()
 
 

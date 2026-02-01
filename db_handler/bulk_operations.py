@@ -1,12 +1,13 @@
+from datetime import date
 from logging import getLogger
 
-from sqlalchemy import delete, func
+from sqlalchemy import delete, func, update
 from sqlalchemy.dialects.postgresql import insert
 
 from config import settings
 from db_handler.api_calls import get_prices_data
 from db_handler.db_helper import db_helper
-from db_handler.models import Base, Item
+from db_handler.models import Base, Item, Order, OrderStatus
 
 logger = getLogger(__name__)
 
@@ -53,3 +54,15 @@ async def bulk_insert_items():
         await conn.execute(stmt)
         await conn.execute(delete(table).where(table.c.last_seen_at < sync_time))
         logger.info("SYNC IS ON. Database SYNCED successfully.")
+
+
+async def change_active_order_to_completed():
+    """Change status of active orders to completed if they are overdue."""
+    stmt = (
+        update(Order)
+        .where(Order.status == OrderStatus.ACTIVE)
+        .where(Order.date_end < date.today())
+        .values(status=OrderStatus.COMPLETED)
+    )
+    async with db_helper.engine.begin() as conn:
+        await conn.execute(stmt)
