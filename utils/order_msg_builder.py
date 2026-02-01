@@ -9,11 +9,11 @@ class OrderBaseMsgBuilder:
         self.items = items
 
     def get_header_text(self) -> str:
-        return f"Замовлення #{self.order.id}.\n"
+        return f"Замовлення <b>#{self.order.id}</b>.\n"
 
     def _order_preview_message(self) -> str:
         order_text = (
-            f"Статус: *{self.order.status.value}*\n"
+            f"Статус: <b>{self.order.status.value}</b>\n"
             f"Початок оренди: {self.order.date_start}\n"
             f"Кінець оренди: {self.order.date_end}\n"
             f"Кількість днів роботи: {self.order.work_days}\n"
@@ -57,6 +57,6 @@ class OrderAdminMsgBuilder(OrderBaseMsgBuilder):
 
     def get_header_text(self) -> str:
         return (
-            f"Замовлення #{self.order.id} від {self.user.name} {self.user.surname} @{self.user.username or 'N/A'}\n"
+            f"Замовлення <b>#{self.order.id}</b> від {self.user.name} {self.user.surname} @{self.user.username or 'N/A'}\n"
             f"{self.user.phone_number or 'N/A'}\n"
         )

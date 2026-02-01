@@ -289,7 +289,7 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
 
         user_reply_message = (
             ms.order_processing_message
-            + ". Менеджер зв'яжеться з вами для підтвердження\n\n"
+            + ". Слідкуйте за зміною статусу замовлення\n\n"
             + OrderUserMsgBuilder(
                 order=order_with_items,
                 items=order_with_items.items_details,

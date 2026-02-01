@@ -210,7 +210,7 @@ async def cancel_delete_order(callback_query: CallbackQuery, callback_data: Dele
 @manager_router.callback_query(OrderCallbackData.filter(F.action == OrderAction.DELETE))
 async def delete_order(callback_query: CallbackQuery, callback_data: OrderCallbackData, session: AsyncSession):
     order_id = callback_data.order_id
-    # old_msg = callback_query.message.text
+    old_msg = callback_query.message.text
     builder = InlineKeyboardBuilder()
     builder.add(
         InlineKeyboardButton(
@@ -232,4 +232,7 @@ async def delete_order(callback_query: CallbackQuery, callback_data: OrderCallba
             ).pack(),
         )
     )
-    await callback_query.message.edit_text(f"Ви впевнені, що хочете видалити замовлення #{order_id} ?", reply_markup=builder.as_markup())
+    await callback_query.message.edit_text(
+        text=f"{old_msg}\n\n<b>Ви впевнені, що хочете видалити замовлення #{order_id} ?</b>",
+        reply_markup=builder.as_markup(),
+    )

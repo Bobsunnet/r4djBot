@@ -2,7 +2,7 @@ from datetime import datetime
 from logging import getLogger
 from typing import List
 
-from sqlalchemy import delete, extract, select
+from sqlalchemy import extract, select
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
