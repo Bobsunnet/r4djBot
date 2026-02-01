@@ -8,10 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db_handler.crud import get_user_by_tg_id
 from filters import TextOrCommand
 from keyboards import (
-    make_auth_kb,
+    make_manager_kb,
+    make_user_kb,
     make_wo_auth_kb,
 )
-from utils import messages as ms
+from utils.messages import not_authorized_message
+from utils.utils import is_manager
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +39,13 @@ async def cmd_start(message: Message, session: AsyncSession):
     )
     if user:
         reply_text = format_welcome_message(user.name)
-        await message.answer(reply_text, reply_markup=make_auth_kb())
+        if is_manager(message.from_user.id):
+            await message.answer(reply_text, reply_markup=make_manager_kb())
+        else:
+            await message.answer(reply_text, reply_markup=make_user_kb())
+
     else:
-        reply_text = "Вітаємо. " + ms.not_authorized_message
+        reply_text = "Вітаємо. " + not_authorized_message
         await message.answer(reply_text, reply_markup=make_wo_auth_kb())
 
 
@@ -48,6 +54,5 @@ async def cmd_start(message: Message, session: AsyncSession):
 
 @start_router.message(TextOrCommand("catalogue"))
 async def cmd_catalogue(message: Message):
-    await message.answer(
-        "📄 Каталог обладнання: https://docs.google.com/spreadsheets/d/1ez7Ur5YD0AiTtN2QEWcgZyhlqLGAA6gln0BgTcbBDqM/edit?gid=0#gid=0"
-    )
+    url = "https://docs.google.com/spreadsheets/d/1ez7Ur5YD0AiTtN2QEWcgZyhlqLGAA6gln0BgTcbBDqM/edit?gid=0#gid=0"
+    await message.answer(f"📄 Каталог обладнання: {url}")

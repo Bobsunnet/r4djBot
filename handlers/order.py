@@ -18,8 +18,8 @@ from db_handler.schemas.order import OrderCreate
 from filters import TextOrCommand
 from keyboards.inline import make_admin_order_inline_kb
 from keyboards.keyboard import (
-    make_auth_kb,
     make_order_cancel_kb,
+    make_user_kb,
     make_web_app_kb,
     make_wo_auth_kb,
 )
@@ -47,9 +47,7 @@ async def delete_last_msg(bot: Bot, chat_id: int, state: FSMContext):
     data = await state.get_data()
     if data.get("last_msg_id"):
         try:
-            await bot.delete_message(
-                chat_id=chat_id, message_id=data["last_msg_id"]
-            )
+            await bot.delete_message(chat_id=chat_id, message_id=data["last_msg_id"])
         except Exception as e:
             logger.error(f"Failed to delete message: {e}")
 
@@ -75,7 +73,10 @@ async def order_start(message: Message, state: FSMContext, session: AsyncSession
 
     await state.clear()
     await state.set_state(OrderStates.date_start)
-    await message.answer("Починаємо оформлення замовлення", reply_markup=make_order_cancel_kb())
+    await message.answer(
+        "Починаємо оформлення замовлення", reply_markup=make_order_cancel_kb()
+    )
+
     msg = await message.answer(
         order_msgs["date_start"],
         reply_markup=await SimpleCalendar(
@@ -97,7 +98,10 @@ async def process_date_start_calendar(
     if selected:
         await state.update_data(date_start=date)
         await state.set_state(OrderStates.date_end)
-        await callback_query.message.edit_text(f"Дата отримання обладнання: {date.strftime('%d.%m.%Y')}")
+        await callback_query.message.edit_text(
+            f"Дата отримання обладнання: {date.strftime('%d.%m.%Y')}"
+        )
+
         msg = await callback_query.message.answer(
             order_msgs["date_end"],
             reply_markup=await SimpleCalendar(
@@ -114,12 +118,18 @@ async def process_date_end_calendar(
     calendar = SimpleCalendar(
         locale=await get_user_locale(callback_query.from_user), show_alerts=True
     )
-    calendar.set_dates_range(datetime(2026, 1, 1), datetime(2027, 12, 31)) #todo: make dates dynamic
+
+    calendar.set_dates_range(
+        datetime(2026, 1, 1), datetime(2027, 12, 31)
+    )  # todo: make dates dynamic
+
     selected, date = await calendar.process_selection(callback_query, callback_data)
     if selected:
         await state.update_data(date_end=date)
         await state.set_state(OrderStates.work_days)
-        await callback_query.message.edit_text(f"Дата повернення обладнання: {date.strftime('%d.%m.%Y')}")
+        await callback_query.message.edit_text(
+            f"Дата повернення обладнання: {date.strftime('%d.%m.%Y')}"
+        )
         msg = await callback_query.message.answer(
             order_msgs["work_days"],
         )
@@ -134,7 +144,8 @@ async def order_cancel(message: Message, state: FSMContext):
         return
 
     await state.clear()
-    await message.answer("Процес замовлення зупинено", reply_markup=make_auth_kb())
+    await message.answer("Процес замовлення зупинено", reply_markup=make_user_kb())
+
 
 
 @order_router.message(StateFilter(OrderStates), F.command("back"))
@@ -187,7 +198,7 @@ async def order_work_days(message: Message, state: FSMContext):
             await state.clear()
             await message.answer(
                 "Здається ви плануєте оренду більше 365 днів. Зв’яжіться з менеджером напряму",
-                reply_markup=make_auth_kb(),
+                reply_markup=make_user_kb(),
             )
             return
 
@@ -222,7 +233,6 @@ async def order_comment(message: Message, state: FSMContext):
     await state.set_state(OrderStates.items)
     await state.update_data(comment=message.text)
     data = await state.get_data()
-
     await message.answer(
         order_msgs["items"],
         reply_markup=make_web_app_kb(data["work_days"]),
@@ -296,7 +306,9 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
 
     finally:
         await state.clear()
-        await message.answer(user_reply_message, reply_markup=make_auth_kb())
+
+        await message.answer(user_reply_message, reply_markup=make_user_kb())
+
 
 
 @order_router.message(OrderStates.items)

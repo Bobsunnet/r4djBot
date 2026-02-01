@@ -1,5 +1,4 @@
 from aiogram import Router
-from aiogram.filters import Command
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +9,7 @@ from aiogram_calendar import (
     get_user_locale,
 )
 from db_handler import crud
+from filters import TextOrCommand
 from keyboards.inline import make_user_order_inline_kb
 from utils.order_msg_builder import OrderUserMsgBuilder
 from utils.utils import create_orders_count_dict
@@ -17,7 +17,7 @@ from utils.utils import create_orders_count_dict
 user_private_router = Router()
 
 
-@user_private_router.message(Command("orders"))
+@user_private_router.message(TextOrCommand("orders"))
 async def orders_list(message: Message, session: AsyncSession):
     if not await crud.get_orders_by_userid(
         session=session, user_id=message.from_user.id

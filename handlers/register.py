@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db_handler import crud
 from db_handler.schemas.user import UserCreate
-from keyboards import make_auth_kb, make_share_contact_kb
+from keyboards import make_share_contact_kb, make_user_kb
 from utils import messages as ms
 from utils.utils import is_valid_number, validate_name
 
@@ -92,7 +92,7 @@ async def registration_phone(
         await crud.create_user(session=session, user=user)
 
         await message.answer(
-            f"Дякуємо за реєстрацію, {data['name']}!", reply_markup=make_auth_kb()
+            f"Дякуємо за реєстрацію, {data['name']}!", reply_markup=make_user_kb()
         )
     except IntegrityError:
         logger.error(

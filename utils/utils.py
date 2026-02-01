@@ -2,6 +2,7 @@ import re
 from collections import Counter
 from datetime import date, datetime
 
+from config import settings
 from db_handler.models import Order
 
 
@@ -63,3 +64,7 @@ def create_orders_count_dict(orders: list[Order]) -> dict[tuple[int, int], int]:
         (order.date_start.year, order.date_start.month) for order in orders
     ])
     return orders_count_dict
+
+
+def is_manager(user_id: int) -> bool:
+    return user_id == settings.telegram.manager_id

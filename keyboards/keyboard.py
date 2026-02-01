@@ -12,7 +12,7 @@ keyboard_cancel = [
 ]
 
 
-def make_auth_kb():
+def make_user_kb():
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="Catalogue"), contacts_button],
@@ -25,6 +25,16 @@ def make_auth_kb():
 def make_wo_auth_kb():
     return ReplyKeyboardMarkup(
         keyboard=[[register_button], [contacts_button]],
+        resize_keyboard=True,
+    )
+
+
+def make_manager_kb():
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Active_orders"), KeyboardButton(text="Pending_orders")],
+            [KeyboardButton(text="Completed_orders"), KeyboardButton(text="Cancelled_orders")],
+        ],
         resize_keyboard=True,
     )
 

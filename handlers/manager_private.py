@@ -1,7 +1,6 @@
 import enum
 
 from aiogram import F, Router
-from aiogram.filters import Command
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardButton
@@ -44,7 +43,6 @@ async def orders_with_status_list(
     message: Message, session: AsyncSession, status: OrderStatus
 ):
     orders = await crud.get_orders_with_status(session=session, status=status)
-
     if not orders:
         await message.answer(f"Немає замовлень, зі статусом: {status}")
         return
@@ -97,28 +95,28 @@ async def process_order_calendar_manager(
     await callback_query.message.delete()
 
 
-@manager_router.message(Command("active_orders"))
+@manager_router.message(F.text.casefold() == "active_orders")
 async def active_orders_list(message: Message, session: AsyncSession):
     await orders_with_status_list(
         message=message, session=session, status=OrderStatus.ACTIVE
     )
 
 
-@manager_router.message(Command("pending_orders"))
+@manager_router.message(F.text.casefold() == "pending_orders")
 async def pending_orders_list(message: Message, session: AsyncSession):
     await orders_with_status_list(
         message=message, session=session, status=OrderStatus.PENDING
     )
 
 
-@manager_router.message(Command("completed_orders"))
+@manager_router.message(F.text.casefold() == "completed_orders")
 async def completed_orders_list(message: Message, session: AsyncSession):
     await orders_with_status_list(
         message=message, session=session, status=OrderStatus.COMPLETED
     )
 
 
-@manager_router.message(Command("cancelled_orders"))
+@manager_router.message(F.text.casefold() == "cancelled_orders")
 async def cancelled_orders_list(message: Message, session: AsyncSession):
     await orders_with_status_list(
         message=message, session=session, status=OrderStatus.CANCELLED
