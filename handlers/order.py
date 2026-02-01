@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from aiogram import Bot, F, Router
 from aiogram.filters import StateFilter
@@ -52,6 +52,14 @@ async def delete_last_msg(bot: Bot, chat_id: int, state: FSMContext):
             logger.error(f"Failed to delete message: {e}")
 
 
+def construct_calendar(locale: str):
+    today = datetime.today()
+    print(today)
+    calendar = SimpleCalendar(locale=locale, show_alerts=True)
+    calendar.set_dates_range(datetime(today.year, today.month, today.day), today + timedelta(days=365))
+    return calendar
+
+
 class OrderStates(StatesGroup):
     date_start = State()
     date_end = State()
@@ -76,12 +84,10 @@ async def order_start(message: Message, state: FSMContext, session: AsyncSession
     await message.answer(
         "Починаємо оформлення замовлення", reply_markup=make_order_cancel_kb()
     )
-
+    calendar = construct_calendar(await get_user_locale(message.from_user))
     msg = await message.answer(
         order_msgs["date_start"],
-        reply_markup=await SimpleCalendar(
-            locale=await get_user_locale(message.from_user)
-        ).start_calendar(),
+        reply_markup=await calendar.start_calendar(),
     )
     await state.update_data(last_msg_id=msg.message_id)
 
@@ -90,10 +96,7 @@ async def order_start(message: Message, state: FSMContext, session: AsyncSession
 async def process_date_start_calendar(
     callback_query: CallbackQuery, callback_data: CallbackData, state: FSMContext
 ):
-    calendar = SimpleCalendar(
-        locale=await get_user_locale(callback_query.from_user), show_alerts=True
-    )
-    calendar.set_dates_range(datetime(2026, 1, 1), datetime(2027, 12, 31)) #todo: make dates dynamic
+    calendar = construct_calendar(await get_user_locale(callback_query.from_user))
     selected, date = await calendar.process_selection(callback_query, callback_data)
     if selected:
         await state.update_data(date_start=date)
@@ -104,9 +107,7 @@ async def process_date_start_calendar(
 
         msg = await callback_query.message.answer(
             order_msgs["date_end"],
-            reply_markup=await SimpleCalendar(
-                locale=await get_user_locale(callback_query.from_user)
-            ).start_calendar(),
+            reply_markup=await calendar.start_calendar(),
         )
         await state.update_data(last_msg_id=msg.message_id)
 
@@ -115,14 +116,7 @@ async def process_date_start_calendar(
 async def process_date_end_calendar(
     callback_query: CallbackQuery, callback_data: CallbackData, state: FSMContext
 ):
-    calendar = SimpleCalendar(
-        locale=await get_user_locale(callback_query.from_user), show_alerts=True
-    )
-
-    calendar.set_dates_range(
-        datetime(2026, 1, 1), datetime(2027, 12, 31)
-    )  # todo: make dates dynamic
-
+    calendar = construct_calendar(await get_user_locale(callback_query.from_user))
     selected, date = await calendar.process_selection(callback_query, callback_data)
     if selected:
         await state.update_data(date_end=date)
@@ -147,19 +141,18 @@ async def order_cancel(message: Message, state: FSMContext):
     await message.answer("Процес замовлення зупинено", reply_markup=make_user_kb())
 
 
-
 @order_router.message(StateFilter(OrderStates), F.command("back"))
 @order_router.message(StateFilter(OrderStates), F.text.casefold() == "back")
 async def order_back(message: Message, state: FSMContext):
     current_state = await state.get_state()
     await message.delete()
-    calendar_kb = await SimpleCalendar(locale=await get_user_locale(message.from_user)).start_calendar()
+    calendar = construct_calendar(await get_user_locale(message.from_user))
     if current_state == OrderStates.date_start:
         answer_text = "Не можливо повернутися на попредній крок, так як це перший. Для виходу натисніть кнопку 'Cancel'\n\n"
         answer_text += order_msgs["date_start"]
         msg = await message.answer(
             answer_text,
-            reply_markup=calendar_kb,
+            reply_markup=await calendar.start_calendar(),
         )
         await delete_last_msg(bot=message.bot, chat_id=message.chat.id, state=state)
         await state.update_data(last_msg_id=msg.message_id)
@@ -176,7 +169,7 @@ async def order_back(message: Message, state: FSMContext):
     if previous == OrderStates.date_end or previous == OrderStates.date_start:
         msg = await message.answer(
             order_msgs[previous.state.split(":")[-1]],
-            reply_markup=calendar_kb,
+            reply_markup=await calendar.start_calendar(),
         )
         await delete_last_msg(bot=message.bot, chat_id=message.chat.id, state=state)
         await state.update_data(last_msg_id=msg.message_id)
