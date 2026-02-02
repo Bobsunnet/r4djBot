@@ -6,6 +6,21 @@ from config import settings
 from db_handler.models import Order
 
 
+def format_work_days_text(work_days: int, titles: list[str]) -> str:
+    """
+    Returns the correct plural form of a word based on the number of work days.
+    """
+    if 11 <= work_days % 100 <= 19:
+        return titles[2]
+
+    last_digit = work_days % 10
+    if last_digit == 1:
+        return titles[0]
+    if 2 <= last_digit <= 4:
+        return titles[1]
+    return titles[2]
+
+
 def validate_name(name: str) -> bool:
     """
     Validates if the name/surname contains only letters, spaces, or hyphens.
