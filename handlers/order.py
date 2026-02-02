@@ -54,7 +54,6 @@ async def delete_last_msg(bot: Bot, chat_id: int, state: FSMContext):
 
 def construct_calendar(locale: str):
     today = datetime.today()
-    print(today)
     calendar = SimpleCalendar(locale=locale, show_alerts=True)
     calendar.set_dates_range(datetime(today.year, today.month, today.day), today + timedelta(days=365))
     return calendar

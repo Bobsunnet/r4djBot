@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 def download_sheets_data(url: str) -> list:
     """Download data from Google Sheets."""
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=(10, 30))
         if response.status_code == 200:
             return response.json().get("data", [])
         else:
