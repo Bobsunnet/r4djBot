@@ -40,6 +40,7 @@ async def process_order_calendar_user(
     callback_data: CallbackData,
     session: AsyncSession,
 ):
+    await callback_query.answer()
     orders = await crud.get_orders_by_userid(
         session=session, user_id=callback_query.from_user.id
     )
