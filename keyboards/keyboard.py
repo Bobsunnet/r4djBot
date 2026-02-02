@@ -16,7 +16,7 @@ def make_user_kb():
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="Catalogue"), contacts_button],
-            [KeyboardButton(text="Order")],
+            [KeyboardButton(text="Order"), KeyboardButton(text="My orders")],
         ],
         resize_keyboard=True,
     )
@@ -32,8 +32,8 @@ def make_wo_auth_kb():
 def make_manager_kb():
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="Active_orders"), KeyboardButton(text="Pending_orders")],
-            [KeyboardButton(text="Completed_orders"), KeyboardButton(text="Cancelled_orders")],
+            [KeyboardButton(text="Active"), KeyboardButton(text="Pending")],
+            [KeyboardButton(text="Completed"), KeyboardButton(text="Cancelled")],
         ],
         resize_keyboard=True,
     )

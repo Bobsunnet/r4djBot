@@ -20,7 +20,7 @@ class OrderBaseMsgBuilder:
     def _translate_status(self) -> str:
         return {
             OrderStatus.PENDING: "Очікує",
-            OrderStatus.ACTIVE: "Прийнято",
+            OrderStatus.ACTIVE: "Активне",
             OrderStatus.COMPLETED: "Завершено",
             OrderStatus.CANCELLED: "Скасовано",
         }[self.order.status]
@@ -48,7 +48,7 @@ class OrderBaseMsgBuilder:
             return ""
 
         order_text = "_" * 30 + "\n"
-        day_text = utils.format_work_days_text(self.order.work_days, titles)
+        day_text = utils.format_plural_form_text(self.order.work_days, titles)
         order_text += f"Загальна вартість оренди за {self.order.work_days} {day_text}: {self._count_items_cost()} грн"
         return order_text
 
@@ -58,7 +58,7 @@ class OrderBaseMsgBuilder:
         """        
         order_text = self._order_preview_message()
         order_text += self._build_items_text()
-        order_text += self.build_total_cost_text()
+        order_text += self._build_total_cost_text()
 
         return order_text
 

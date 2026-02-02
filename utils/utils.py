@@ -6,7 +6,7 @@ from config import settings
 from db_handler.models import Order
 
 
-def format_work_days_text(work_days: int, titles: list[str]) -> str:
+def format_plural_form_text(work_days: int, titles: list[str]) -> str:
     """
     Returns the correct plural form of a word based on the number of work days.
     """

@@ -20,8 +20,9 @@ from keyboards import (
     make_admin_order_inline_kb,
     make_user_order_inline_kb,
 )
+from utils import messages as ms
 from utils.order_msg_builder import OrderAdminMsgBuilder
-from utils.utils import create_orders_count_dict
+from utils.utils import create_orders_count_dict, format_plural_form_text
 
 manager_router = Router()
 manager_router.message.filter(IsManager())
@@ -46,9 +47,10 @@ async def orders_with_status_list(
     if not orders:
         await message.answer(f"Немає замовлень, зі статусом: {status}")
         return
-
+        
+    order_word_text = format_plural_form_text(len(orders), ms.orders_plural)
     await message.answer(
-        "Оберіть місяць: ",
+        f"Знайдено [{len(orders)}] {order_word_text}. Оберіть місяць: ",
         reply_markup=await DialogCalendar(locale=await get_user_locale(message.from_user), status=status).start_calendar(),
     )
 
@@ -95,28 +97,28 @@ async def process_order_calendar_manager(
     await callback_query.message.delete()
 
 
-@manager_router.message(F.text.casefold() == "active_orders")
+@manager_router.message(F.text.casefold() == "active")
 async def active_orders_list(message: Message, session: AsyncSession):
     await orders_with_status_list(
         message=message, session=session, status=OrderStatus.ACTIVE
     )
 
 
-@manager_router.message(F.text.casefold() == "pending_orders")
+@manager_router.message(F.text.casefold() == "pending")
 async def pending_orders_list(message: Message, session: AsyncSession):
     await orders_with_status_list(
         message=message, session=session, status=OrderStatus.PENDING
     )
 
 
-@manager_router.message(F.text.casefold() == "completed_orders")
+@manager_router.message(F.text.casefold() == "completed")
 async def completed_orders_list(message: Message, session: AsyncSession):
     await orders_with_status_list(
         message=message, session=session, status=OrderStatus.COMPLETED
     )
 
 
-@manager_router.message(F.text.casefold() == "cancelled_orders")
+@manager_router.message(F.text.casefold() == "cancelled")
 async def cancelled_orders_list(message: Message, session: AsyncSession):
     await orders_with_status_list(
         message=message, session=session, status=OrderStatus.CANCELLED

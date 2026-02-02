@@ -6,12 +6,17 @@ from utils.utils import is_manager
 
 class TextOrCommand(BaseFilter):
     def __init__(self, text: str):
-        self.text = text
+        self.text_joined = self._make_text_joined(text)
+    
+    def _make_text_joined(self, text: str):
+        return "_".join(text.split())
 
     async def __call__(self, message: Message) -> bool:
         if not message.text:
             return False
-        return message.text.casefold().strip().lstrip("/") == self.text
+        
+        message_text = self._make_text_joined(message.text.casefold().strip().lstrip("/"))
+        return message_text == self.text_joined
 
 
 class IsManager(BaseFilter):

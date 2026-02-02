@@ -11,22 +11,25 @@ from aiogram_calendar import (
 from db_handler import crud
 from filters import TextOrCommand
 from keyboards.inline import make_user_order_inline_kb
+from utils import messages as ms
 from utils.order_msg_builder import OrderUserMsgBuilder
-from utils.utils import create_orders_count_dict
+from utils.utils import create_orders_count_dict, format_plural_form_text
 
 user_private_router = Router()
 
 
-@user_private_router.message(TextOrCommand("orders"))
+@user_private_router.message(TextOrCommand("my_orders"))
 async def orders_list(message: Message, session: AsyncSession):
-    if not await crud.get_orders_by_userid(
+    orders = await crud.get_orders_by_userid(
         session=session, user_id=message.from_user.id
-    ):
+    )
+    if not orders:
         await message.answer("У вас ще немає замовлень")
         return
 
+    order_word_text = format_plural_form_text(len(orders), ms.orders_plural)
     await message.answer(
-        "Оберіть місяць: ",
+        f"Знайдено [{len(orders)}] {order_word_text}. Оберіть місяць: ",
         reply_markup=await DialogCalendar(locale=await get_user_locale(message.from_user)).start_calendar(),
     )
 
@@ -40,6 +43,9 @@ async def process_order_calendar_user(
     orders = await crud.get_orders_by_userid(
         session=session, user_id=callback_query.from_user.id
     )
+    if not orders:
+        await callback_query.message.answer("У вас ще немає замовлень")
+        return
 
     selected, date = await DialogCalendar(
         locale=await get_user_locale(callback_query.from_user),

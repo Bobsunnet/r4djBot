@@ -1,7 +1,5 @@
 reload_help_message = "Спробуйте ще раз, перезавантаживши бота командою /start"
 
-date_format_message = "\ndd.mm.yy - dd.mm.yy\n(день.місяць.рік)"
-
 not_authorized_message = "На жаль, ви ще не зареєстровані в системі. Спочатку пройдіть реєстрацію, щоб мати можливість оформити замовлення"
 
 order_processing_message = "✅Ваше замовлення отримано"
@@ -16,3 +14,5 @@ failed_to_send_order_message = (
 )
 
 bad_input_message = "Можна використовувати тільки текст"
+
+orders_plural = ["замовлення", "замовлення", "замовлень"]
