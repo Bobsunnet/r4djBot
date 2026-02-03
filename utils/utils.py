@@ -84,6 +84,9 @@ def validate_date(date_str: str) -> date| None:
 
 
 def create_orders_count_dict(orders: list[Order]) -> dict[tuple[int, int], int]:
+    """
+    Creates a dictionary mapping (year, month) tuples to the count of orders.
+    """
     orders_count_dict = Counter([
         (order.date_start.year, order.date_start.month) for order in orders
     ])
