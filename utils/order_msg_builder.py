@@ -1,4 +1,4 @@
-from db_handler.models import Order, OrderItemAssociation, OrderStatus, User
+from db_handler.models import Order, OrderItemAssociation, User
 from utils import utils
 
 titles = ['зміну', 'зміни', 'змін']
@@ -16,21 +16,13 @@ class OrderBaseMsgBuilder:
         for entry in self.items:
             items_text += f"• {entry.item.name} × {entry.quantity} шт.\n"
         return items_text
-    
-    def _translate_status(self) -> str:
-        return {
-            OrderStatus.PENDING: "Очікує",
-            OrderStatus.ACTIVE: "Активне",
-            OrderStatus.COMPLETED: "Завершено",
-            OrderStatus.CANCELLED: "Скасовано",
-        }[self.order.status]
 
     def get_header_text(self) -> str:
         return f"Замовлення <b>#{self.order.id}</b>.\n"
 
     def _order_preview_message(self) -> str:
         order_text = (
-            f"Статус: <b>{self._translate_status()}</b>\n"
+            f"Статус: <b>{utils.translate_status(self.order.status)}</b>\n"
             f"Початок оренди: {self.order.date_start}\n"
             f"Кінець оренди: {self.order.date_end}\n"
             f"Кількість днів роботи: {self.order.work_days}\n"

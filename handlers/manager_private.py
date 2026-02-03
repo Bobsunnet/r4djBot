@@ -22,7 +22,11 @@ from keyboards import (
 )
 from utils import messages as ms
 from utils.order_msg_builder import OrderAdminMsgBuilder
-from utils.utils import create_orders_count_dict, format_plural_form_text
+from utils.utils import (
+    create_orders_count_dict,
+    format_plural_form_text,
+    translate_status,
+)
 
 manager_router = Router()
 manager_router.message.filter(IsManager())
@@ -45,12 +49,12 @@ async def orders_with_status_list(
 ):
     orders = await crud.get_orders_with_status(session=session, status=status)
     if not orders:
-        await message.answer(f"Немає замовлень, зі статусом: {status}")
+        await message.answer(f"Немає замовлень, зі статусом <b>{translate_status(status)}</b>")
         return
         
     order_word_text = format_plural_form_text(len(orders), ms.orders_plural)
     await message.answer(
-        f"Знайдено [{len(orders)}] {order_word_text}. Оберіть місяць: ",
+        f"Знайдено [{len(orders)}] {order_word_text} зі статусом <b>{translate_status(status)}</b>. Оберіть місяць: ",
         reply_markup=await DialogCalendar(locale=await get_user_locale(message.from_user), status=status).start_calendar(),
     )
 

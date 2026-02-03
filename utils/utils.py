@@ -3,7 +3,16 @@ from collections import Counter
 from datetime import date, datetime
 
 from config import settings
-from db_handler.models import Order
+from db_handler.models import Order, OrderStatus
+
+
+def translate_status(status: OrderStatus) -> str:
+    return {
+        OrderStatus.PENDING: "Очікує",
+        OrderStatus.ACTIVE: "Активне",
+        OrderStatus.COMPLETED: "Завершено",
+        OrderStatus.CANCELLED: "Скасовано",
+    }[status]
 
 
 def format_plural_form_text(work_days: int, titles: list[str]) -> str:
