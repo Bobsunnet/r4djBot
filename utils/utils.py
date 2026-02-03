@@ -4,15 +4,11 @@ from datetime import date, datetime
 
 from config import settings
 from db_handler.models import Order, OrderStatus
+from utils import messages as ms
 
 
 def translate_status(status: OrderStatus) -> str:
-    return {
-        OrderStatus.PENDING: "Очікує",
-        OrderStatus.ACTIVE: "Активне",
-        OrderStatus.COMPLETED: "Завершено",
-        OrderStatus.CANCELLED: "Скасовано",
-    }[status]
+    return ms.STATUS_TRANSLATIONS.get(status.value, str(status.value))
 
 
 def format_plural_form_text(work_days: int, titles: list[str]) -> str:

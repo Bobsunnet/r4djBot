@@ -16,3 +16,10 @@ failed_to_send_order_message = (
 bad_input_message = "Можна використовувати тільки текст"
 
 orders_plural = ["замовлення", "замовлення", "замовлень"]
+
+STATUS_TRANSLATIONS = {
+    "pending": "Очікує",
+    "active": "Активне",
+    "completed": "Завершено",
+    "cancelled": "Скасовано",
+}
