@@ -5,9 +5,9 @@ from .inline import (
     make_user_order_inline_kb,
 )
 from .keyboard import (
+    make_cancel_kb,
     make_confirmation_kb,
     make_manager_kb,
-    make_order_cancel_kb,
     make_share_contact_kb,
     make_user_kb,
     make_web_app_kb,

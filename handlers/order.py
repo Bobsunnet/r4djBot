@@ -18,7 +18,7 @@ from db_handler.schemas.order import OrderCreate
 from filters import TextOrCommand
 from keyboards.inline import make_admin_order_inline_kb
 from keyboards.keyboard import (
-    make_order_cancel_kb,
+    make_cancel_kb,
     make_user_kb,
     make_web_app_kb,
     make_wo_auth_kb,
@@ -81,7 +81,7 @@ async def order_start(message: Message, state: FSMContext, session: AsyncSession
     await state.clear()
     await state.set_state(OrderStates.date_start)
     await message.answer(
-        "Починаємо оформлення замовлення", reply_markup=make_order_cancel_kb()
+        "Починаємо оформлення замовлення", reply_markup=make_cancel_kb()
     )
     calendar = construct_calendar(await get_user_locale(message.from_user))
     msg = await message.answer(
@@ -176,7 +176,7 @@ async def order_back(message: Message, state: FSMContext):
 
     await message.answer(
         order_msgs[previous.state.split(":")[-1]],
-        reply_markup=make_order_cancel_kb(),
+        reply_markup=make_cancel_kb(),
     )
 
 

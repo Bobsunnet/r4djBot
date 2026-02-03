@@ -43,6 +43,7 @@ def make_share_contact_kb():
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="Поділитися контактом", request_contact=True)],
+            *keyboard_cancel,
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -59,7 +60,7 @@ def make_confirmation_kb():
     )
 
 
-def make_order_cancel_kb():
+def make_cancel_kb():
     return ReplyKeyboardMarkup(
         keyboard=keyboard_cancel,
         resize_keyboard=True,
