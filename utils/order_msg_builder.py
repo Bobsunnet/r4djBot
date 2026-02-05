@@ -1,3 +1,5 @@
+from aiogram import html
+
 from db_handler.models import Order, OrderItemAssociation, User
 from utils import utils
 
@@ -14,7 +16,7 @@ class OrderBaseMsgBuilder:
     def _build_items_text(self) -> str:
         items_text = ""
         for entry in self.items:
-            items_text += f"• {entry.item.name} × {entry.quantity} шт.\n"
+            items_text += f"• {html.quote(entry.item.name)} × {entry.quantity} шт.\n"
         return items_text
 
     def get_header_text(self) -> str:
@@ -26,8 +28,8 @@ class OrderBaseMsgBuilder:
             f"Початок оренди: {self.order.date_start}\n"
             f"Кінець оренди: {self.order.date_end}\n"
             f"Кількість днів роботи: {self.order.work_days}\n"
-            f"Адреса та час доставки/самовивіз: {self.order.address}\n\n"
-            f"Коментар: {self.order.description}\n\n"
+            f"Адреса та час доставки/самовивіз: {html.quote(self.order.address)}\n\n"
+            f"Коментар: {html.quote(self.order.description)}\n\n"
         )
         return order_text
 
