@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     debug: bool = os.getenv("DEBUG", "False").lower() in TRUE_VALUES
     LOG_DIR: Path = BASE_DIR / "logs"
     web_app_url: str = os.getenv("WEB_APP_URL")
-    price_multiplier: float = 0.5
+    price_multiplier: int = 1
 
 
 settings = Settings()
