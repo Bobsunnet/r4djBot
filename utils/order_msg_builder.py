@@ -44,19 +44,20 @@ class OrderBaseMsgBuilder:
         order_text += f"Загальна вартість оренди за {self.order.work_days} {day_text}: {self._count_items_cost()} грн"
         return order_text
 
-    def _order_full_message(self) -> str:
+    def _order_full_message(self, show_price: bool = False) -> str:
         """
         Builds the order message with user details and items.
         """        
         order_text = self._order_preview_message()
         order_text += self._build_items_text()
-        order_text += self._build_total_cost_text()
+        if show_price:
+            order_text += self._build_total_cost_text()
 
         return order_text
 
-    def build_full_message(self) -> str:
+    def build_full_message(self, show_price: bool = False) -> str:
         text = f"{self.get_header_text()}\n"
-        text += self._order_full_message()
+        text += self._order_full_message(show_price)
         return text
 
     def build_preview_message(self) -> str:
