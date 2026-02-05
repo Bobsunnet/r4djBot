@@ -125,7 +125,10 @@ function renderItemsList(items) {
             <div class="item-info">
                 <div class="item-name">${escapeHtml(item.name)}</div>
                 ${item.desc ? `<div class="item-desc">${escapeHtml(item.desc)}</div>` : ''}
-                <div class="item-price">Доступно: ${item.amount}</div>
+                <div class="amount-price-container">
+                    <div class="item-amount">Доступно: ${escapeHtml(item.amount)}</div>
+                    <div class="item-price">Ціна: ${escapeHtml(item.price)}грн</div>
+                </div>
             </div>
             <div class="quantity-container">
                 <div class="quantity-info">
