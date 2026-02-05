@@ -58,6 +58,7 @@ async def orders_with_status_list(
         reply_markup=await DialogCalendar(locale=await get_user_locale(message.from_user), status=status).start_calendar(),
     )
 
+
 @manager_router.callback_query(ManagerCalendarCallback.filter())
 async def process_order_calendar_manager(
     callback_query: CallbackQuery,
@@ -138,7 +139,7 @@ async def change_order_status(
         await callback_query.answer("Замовлення не знайдено", show_alert=True)
         return
 
-    order.status = status
+    order.status = status #todo: move whole operation to crud and use with_for_update()
     await session.commit()
 
     new_keyboard = make_admin_order_inline_kb(order_id=order.id, status=status)

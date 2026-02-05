@@ -8,12 +8,14 @@ __all__ = [
     "details_router",
     "start_router",
     "user_private_router",
+    "user_data_router",
 ]
 
 from .contacts import contacts_router
 from .error_commands import unknown_command_router
 from .help import help_router
 from .manager_private import manager_router
+from .manager_users import user_data_router
 from .order import order_router
 from .register import register_router
 from .show_details import details_router

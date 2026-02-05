@@ -27,6 +27,18 @@ async def get_user_by_tg_id(session: AsyncSession, user_id: int) -> User | None:
     return result.scalar_one_or_none()
 
 
+async def get_users(session: AsyncSession, limit=None, offset=0) -> List[User]:
+    if offset < 0:
+        offset = 0
+    
+    if limit is not None and limit < 0:
+        limit = None
+
+    stmt = select(User).options(selectinload(User.orders)).offset(offset).limit(limit)
+    result: Result = await session.execute(stmt)
+    users = result.scalars().all()
+    return list(users)
+
 async def create_user(session: AsyncSession, user: UserCreate) -> User:
     user = User(**user.model_dump())
     session.add(user)
