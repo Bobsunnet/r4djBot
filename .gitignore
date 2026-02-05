@@ -222,3 +222,9 @@ sandbox_run.py
 practice_db_queries.py
 check.sql
 aiogram_calendar/tests/
+.pre-commit-config.yaml
+calendar_bot.py
+.agent/rules/code-review.md
+.agent/workflows/instructions.md
+.agent/workflows/testing.md
+.agent/workflows/deployment.md
