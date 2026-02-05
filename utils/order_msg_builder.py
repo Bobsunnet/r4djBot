@@ -1,3 +1,5 @@
+from aiogram import html
+
 from config import settings
 from db_handler.models import Order, OrderItemAssociation, User
 
@@ -24,8 +26,8 @@ class OrderBaseMsgBuilder:
             f"Початок оренди: {self.order.date_start}\n"
             f"Кінець оренди: {self.order.date_end}\n"
             f"Кількість днів роботи: {self.order.work_days}\n"
-            f"Адреса та час доставки/самовивіз: {self.order.address}\n\n"
-            f"Коментар: {self.order.description}\n\n"
+            f"Адреса та час доставки/самовивіз: {html.quote(self.order.address)}\n\n"
+            f"Коментар: {html.quote(self.order.description)}\n\n"
         )
         return order_text
 
@@ -35,7 +37,7 @@ class OrderBaseMsgBuilder:
         """
         order_text = self._order_preview_message()
         for entry in self.items:
-            order_text += f"• {entry.item.name} × {entry.quantity} шт.\n"
+            order_text += f"• {html.quote(entry.item.name)} × {entry.quantity} шт.\n"
 
         return order_text
 
