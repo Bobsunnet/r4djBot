@@ -1,3 +1,4 @@
+import math
 from typing import List
 
 from aiogram import Router
@@ -24,11 +25,15 @@ class UserPaginationCallback(CallbackData, prefix='user_pagination'):
     pages_count: int
 
 
-def format_users_text(users: List[User]):
+def format_users_text(users: List[User], limit: int = -1):
     if not users:
         return "The end of list"
+    
+    if limit <0:
+        limit = len(users)
+
     long_text = ""
-    for user in users:
+    for user in users[:limit]:
         text = f"Name: {user.name} {user.surname} @{user.username or 'N/A'}\n"
         text += f"Phone: {user.phone_number}\n"
         text += f"Orders count: {len(user.orders)}\n"
@@ -40,16 +45,16 @@ def format_users_text(users: List[User]):
 @user_data_router.message(TextOrCommand("users"))
 async def show_users(message: Message, session: AsyncSession):
     users = await crud.get_users(session)
-    pages_count = len(users) // users_per_page + 1
+    pages_count = math.ceil(len(users) / users_per_page)
     builder = InlineKeyboardBuilder()
     # builder.add(InlineKeyboardButton(text="Previous", callback_data=EmptyCallbackData().pack()))
     builder.add(
         InlineKeyboardButton(
             text="Next",
-            callback_data=UserPaginationCallback(page=1, pages_count=pages_count).pack(),
+            callback_data=UserPaginationCallback(page=2, pages_count=pages_count).pack(),
         )
     )
-    await message.answer("Users list...", reply_markup=builder.as_markup())
+    await message.answer(format_users_text(users, limit=users_per_page), reply_markup=builder.as_markup())
 
 
 @user_data_router.callback_query(UserPaginationCallback.filter())
