@@ -9,11 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db_handler import crud
 from db_handler.models import User
-from filters import TextOrCommand
+from filters import IsManager, TextOrCommand
 
 user_data_router = Router()
+user_data_router.message.filter(IsManager())
+user_data_router.callback_query.filter(IsManager())
 
-users_per_page = 2
+users_per_page = 6
 
 
 class EmptyCallbackData(CallbackData, prefix='empty'):
