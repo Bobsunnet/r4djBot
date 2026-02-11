@@ -38,6 +38,7 @@ async def cmd_start(message: Message, session: AsyncSession):
         user_id=message.from_user.id,
     )
     if user:
+        logger.info(f"User {user.name} {user.surname} ({message.from_user.id}) is authorized")
         reply_text = format_welcome_message(user.name)
         if is_manager(message.from_user.id):
             await message.answer(reply_text, reply_markup=make_manager_kb())
@@ -45,6 +46,7 @@ async def cmd_start(message: Message, session: AsyncSession):
             await message.answer(reply_text, reply_markup=make_user_kb())
 
     else:
+        logger.warning(f"User {message.from_user.id} is not authorized")
         reply_text = "Вітаємо. " + not_authorized_message
         await message.answer(reply_text, reply_markup=make_wo_auth_kb())
 

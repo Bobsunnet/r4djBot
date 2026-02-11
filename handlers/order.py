@@ -76,6 +76,7 @@ async def order_start(message: Message, state: FSMContext, session: AsyncSession
             ms.not_authorized_message,
             reply_markup=make_wo_auth_kb(),
         )
+        logger.warning(f"[ORDER] User {message.from_user.id} is not authorized")
         return
 
     await state.clear()
@@ -264,7 +265,7 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
             session=session, order_id=order.id
         )
 
-        logger.info(f"[ORDER] ORDER FROM {message.from_user.id} created: {order_dto}")
+        logger.info(f"[ORDER] ORDER FROM {user.name} {user.surname} ({message.from_user.id}) created: {order_dto}")
         order_text = OrderAdminMsgBuilder(
             order=order_with_items,
             items=order_with_items.items_details,

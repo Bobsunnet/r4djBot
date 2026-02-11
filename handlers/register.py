@@ -145,6 +145,7 @@ async def registration_phone(
     )
     try:
         await crud.create_user(session=session, user=user)
+        logger.info(f"[DB] User {user.name} {user.surname} ({message.from_user.id}) is registered")
 
         await message.answer(
             f"Дякуємо за реєстрацію, {data['name']}!", reply_markup=make_user_kb()
