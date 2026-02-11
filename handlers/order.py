@@ -67,6 +67,28 @@ class OrderStates(StatesGroup):
     comment = State()
     items = State()
 
+    order_for_edit = None
+
+
+@order_router.callback_query(StateFilter(None), F.data.startswith("edit_order"))
+async def order_edit(callback_query: CallbackQuery, state: FSMContext, session: AsyncSession):
+    await callback_query.message.answer(
+        "Починаємо редагування замовлення, для пропуску кроку введіть . (крапку)", reply_markup=make_cancel_kb()
+    )
+    await state.set_state(OrderStates.date_start)
+    order_orm = await crud.get_order_with_items(
+        session=session,
+        order_id=int(callback_query.data.split("_")[2]),
+    )
+    OrderStates.order_for_edit = order_orm
+
+    calendar = construct_calendar(await get_user_locale(callback_query.from_user))
+    msg = await callback_query.message.answer(
+        order_msgs["date_start"],
+        reply_markup=await calendar.start_calendar(),
+    )
+    await state.update_data(last_msg_id=msg.message_id)
+
 
 @order_router.message(TextOrCommand("order"))
 async def order_start(message: Message, state: FSMContext, session: AsyncSession):
@@ -89,6 +111,37 @@ async def order_start(message: Message, state: FSMContext, session: AsyncSession
         order_msgs["date_start"],
         reply_markup=await calendar.start_calendar(),
     )
+    await state.update_data(last_msg_id=msg.message_id)
+
+
+@order_router.message(OrderStates.date_start, F.text == ".")
+async def edit_date_start(message: Message, state: FSMContext):
+    calendar = construct_calendar(await get_user_locale(message.from_user))
+    if OrderStates.order_for_edit is None:
+        text = "Дату початку ще не обрано. Оберіть дату початку"
+    else:
+        text = order_msgs["date_end"]
+        await state.update_data(date_start=OrderStates.order_for_edit.date_start)
+        print(OrderStates.order_for_edit)
+        await state.set_state(OrderStates.date_end)
+
+    msg = await message.answer(
+        text,
+        reply_markup=await calendar.start_calendar(),
+    )
+    await state.update_data(last_msg_id=msg.message_id)
+
+
+@order_router.message(OrderStates.date_end, F.text == ".")
+async def edit_date_end(message: Message, state: FSMContext):
+    if OrderStates.order_for_edit is None:
+        text = "Дату повернення ще не обрано. Оберіть дату повернення"
+    else:
+        text = order_msgs["work_days"]
+        await state.update_data(date_end=OrderStates.order_for_edit.date_end)
+        await state.set_state(OrderStates.work_days)
+
+    msg = await message.answer(text)
     await state.update_data(last_msg_id=msg.message_id)
 
 
@@ -184,10 +237,17 @@ async def order_back(message: Message, state: FSMContext):
 @order_router.message(OrderStates.work_days, F.text)
 async def order_work_days(message: Message, state: FSMContext):
     await state.set_state(OrderStates.address)
-    work_days = utils.work_days_validation(message.text)
+    if message.text == '.':
+        if OrderStates.order_for_edit is None:
+            await message.answer("Ви не редагуєте замовлення" + order_msgs["work_days"])
+            return
+
+        work_days = OrderStates.order_for_edit.work_days
+    else:
+        work_days = utils.work_days_validation(message.text)
 
     if work_days:
-        if work_days > 365:
+        if work_days > 365: # todo: get rid of this check
             await state.clear()
             await message.answer(
                 "Здається ви плануєте оренду більше 365 днів. Зв’яжіться з менеджером напряму",
@@ -212,7 +272,16 @@ async def order_work_days_bad_input(message: Message, state: FSMContext):
 @order_router.message(OrderStates.address, F.text)
 async def order_address(message: Message, state: FSMContext):
     await state.set_state(OrderStates.comment)
-    await state.update_data(address=message.text)
+    if message.text == '.':
+        if OrderStates.order_for_edit is None:
+            await message.answer("Ви не редагуєте замовлення" + order_msgs["address"])
+            return
+
+        address = OrderStates.order_for_edit.address
+    else:
+        address = message.text
+
+    await state.update_data(address=address)
     await message.answer(order_msgs["comment"])
 
 
@@ -223,8 +292,17 @@ async def order_address_bad_input(message: Message, state: FSMContext):
 
 @order_router.message(OrderStates.comment, F.text)
 async def order_comment(message: Message, state: FSMContext):
+    if message.text == '.':
+        if OrderStates.order_for_edit is None:
+            await message.answer("Ви не редагуєте замовлення" + order_msgs["comment"])
+            return
+
+        comment = OrderStates.order_for_edit.description
+    else:
+        comment = message.text
+
     await state.set_state(OrderStates.items)
-    await state.update_data(comment=message.text)
+    await state.update_data(comment=comment)
     data = await state.get_data()
     await message.answer(
         order_msgs["items"],

@@ -75,7 +75,7 @@ def make_admin_order_inline_kb(order_id: int, status: OrderStatus):
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(
-            text="Show more",
+            text="Детальніше",
             callback_data=f"show_details_{order_id}",
         )],
             create_admin_order_buttons(order_id, status),
@@ -86,7 +86,10 @@ def make_admin_order_inline_kb(order_id: int, status: OrderStatus):
 def make_user_order_inline_kb(order_id: int, status: OrderStatus):
     return InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(
-            text="Show more",
+            text="Детальніше",
             callback_data=f"show_details_{order_id}",
+        )], [InlineKeyboardButton(
+            text="Редагувати",
+            callback_data=f"edit_order_{order_id}",
         )]],
     )
