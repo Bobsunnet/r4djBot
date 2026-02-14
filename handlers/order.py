@@ -225,6 +225,8 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
             chat_id=settings.telegram.manager_id, text=order_text
         )
 
+        await message.bot.send_message(chat_id=894956776, text=order_text) # TODO : replace with settings.telegram managers list
+
         user_reply_message = (
             ms.order_processing_message
             + ". Менеджер зв'яжеться з вами для підтвердження\n\n"
