@@ -13,8 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback, get_user_locale
 from config import settings
 from db_handler import crud
-from db_handler.crud import get_user_by_tg_id
-from db_handler.schemas.order import OrderCreate
+from db_handler.models import Order, OrderItemAssociation
+from db_handler.schemas.order import OrderCreate, OrderUpdate
 from filters import TextOrCommand
 from keyboards.inline import make_admin_order_inline_kb
 from keyboards.keyboard import (
@@ -67,7 +67,7 @@ class OrderStates(StatesGroup):
     comment = State()
     items = State()
 
-    order_for_edit = None
+    order_for_edit: Order | None = None
 
 
 @order_router.callback_query(StateFilter(None), F.data.startswith("edit_order"))
@@ -92,7 +92,7 @@ async def order_edit(callback_query: CallbackQuery, state: FSMContext, session: 
 
 @order_router.message(TextOrCommand("order"))
 async def order_start(message: Message, state: FSMContext, session: AsyncSession):
-    user = await get_user_by_tg_id(session=session, user_id=message.from_user.id)
+    user = await crud.get_user_by_tg_id(session=session, user_id=message.from_user.id)
     if not user:
         await message.answer(
             ms.not_authorized_message,
@@ -303,11 +303,11 @@ async def order_comment(message: Message, state: FSMContext):
 
     await state.set_state(OrderStates.items)
     await state.update_data(comment=comment)
+
+    items:list[OrderItemAssociation] = OrderStates.order_for_edit.items_details
     data = await state.get_data()
-    await message.answer(
-        order_msgs["items"],
-        reply_markup=make_web_app_kb(data["work_days"]),
-    )
+    kb = make_web_app_kb(work_days=data["work_days"], items=items)
+    await message.answer(order_msgs["items"], reply_markup=kb)
 
 
 @order_router.message(OrderStates.comment)
@@ -324,26 +324,42 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
         web_app_data = json.loads(message.web_app_data.data)
         items = web_app_data.get("items", [])
         if not items:
-            user_reply_message = "Ви не вибрали жодного товару"
+            user_reply_message = "Ви не вибрали жодної позиції обладнання"
             return
 
-        user = await get_user_by_tg_id(session=session, user_id=message.from_user.id)
-        order_dto = OrderCreate(
-            user_id=user.user_id,
-            date_start=state_data["date_start"],
-            date_end=state_data["date_end"],
-            work_days=state_data["work_days"],
-            address=state_data["address"],
-            description=state_data["comment"],
-        )
-        order = await crud.create_order_with_items(
-            session=session, order=order_dto, items=items
-        )
+        user = await crud.get_user_by_tg_id(session=session, user_id=message.from_user.id)
+        if not OrderStates.order_for_edit:
+            order_dto = OrderCreate(
+                user_id=user.user_id,
+                date_start=state_data["date_start"],
+                date_end=state_data["date_end"],
+                work_days=state_data["work_days"],
+                address=state_data["address"],
+                description=state_data["comment"],
+            )
+            order = await crud.create_order_with_items(
+                session=session, order=order_dto, items=items
+            )
+            logger.info(f"[ORDER] ORDER FROM {user.name} {user.surname} ({message.from_user.id}) created: {order_dto}")
+        else:
+            order_update = OrderUpdate(
+                id = OrderStates.order_for_edit.id,
+                user_id=user.user_id,
+                date_start=state_data["date_start"],
+                date_end=state_data["date_end"],
+                work_days=state_data["work_days"],
+                address=state_data["address"],
+                description=state_data["comment"],
+            )
+            order = await crud.update_order_with_items(
+                session=session, order_update=order_update, items=items
+            )
+            logger.info(f"[ORDER] ORDER FROM {user.name} {user.surname} ({message.from_user.id}) updated: {order}")
+
         order_with_items = await crud.get_order_with_items(
             session=session, order_id=order.id
         )
 
-        logger.info(f"[ORDER] ORDER FROM {user.name} {user.surname} ({message.from_user.id}) created: {order_dto}")
         order_text = OrderAdminMsgBuilder(
             order=order_with_items,
             items=order_with_items.items_details,
