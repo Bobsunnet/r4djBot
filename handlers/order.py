@@ -11,21 +11,22 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback, get_user_locale
-from config import settings
 from db_handler import crud
 from db_handler.models import Order, OrderItemAssociation
-from db_handler.schemas.order import OrderCreate, OrderUpdate
 from filters import TextOrCommand
-from keyboards.inline import make_admin_order_inline_kb
 from keyboards.keyboard import (
     make_cancel_kb,
     make_user_kb,
     make_web_app_kb,
     make_wo_auth_kb,
 )
+from services import process_order_submission
+from services.notification_service import (
+    build_user_confirmation_message,
+    notify_admin_new_order,
+)
 from utils import messages as ms
 from utils import utils
-from utils.order_msg_builder import OrderAdminMsgBuilder, OrderUserMsgBuilder
 
 order_router = Router()
 
@@ -122,7 +123,6 @@ async def edit_date_start(message: Message, state: FSMContext):
     else:
         text = order_msgs["date_end"]
         await state.update_data(date_start=OrderStates.order_for_edit.date_start)
-        print(OrderStates.order_for_edit)
         await state.set_state(OrderStates.date_end)
 
     msg = await message.answer(
@@ -134,14 +134,19 @@ async def edit_date_start(message: Message, state: FSMContext):
 
 @order_router.message(OrderStates.date_end, F.text == ".")
 async def edit_date_end(message: Message, state: FSMContext):
+    calendar = construct_calendar(await get_user_locale(message.from_user))
     if OrderStates.order_for_edit is None:
-        text = "Дату повернення ще не обрано. Оберіть дату повернення"
-    else:
-        text = order_msgs["work_days"]
-        await state.update_data(date_end=OrderStates.order_for_edit.date_end)
-        await state.set_state(OrderStates.work_days)
+        msg = await message.answer(
+            "Дату повернення ще не обрано. Оберіть дату повернення",
+            reply_markup=await calendar.start_calendar(),
+        )
+        await state.update_data(last_msg_id=msg.message_id)
+        return 
 
-    msg = await message.answer(text)
+    await state.update_data(date_end=OrderStates.order_for_edit.date_end)
+    await state.set_state(OrderStates.work_days)
+
+    msg = await message.answer(order_msgs["work_days"])
     await state.update_data(last_msg_id=msg.message_id)
 
 
@@ -236,16 +241,16 @@ async def order_back(message: Message, state: FSMContext):
 
 @order_router.message(OrderStates.work_days, F.text)
 async def order_work_days(message: Message, state: FSMContext):
-    await state.set_state(OrderStates.address)
     if message.text == '.':
         if OrderStates.order_for_edit is None:
-            await message.answer("Ви не редагуєте замовлення" + order_msgs["work_days"])
+            await message.answer(ms.not_in_edit_mode_message + order_msgs["work_days"])
             return
 
         work_days = OrderStates.order_for_edit.work_days
     else:
         work_days = utils.work_days_validation(message.text)
 
+    await state.set_state(OrderStates.address)
     if work_days:
         if work_days > 365: # todo: get rid of this check
             await state.clear()
@@ -271,16 +276,16 @@ async def order_work_days_bad_input(message: Message, state: FSMContext):
 
 @order_router.message(OrderStates.address, F.text)
 async def order_address(message: Message, state: FSMContext):
-    await state.set_state(OrderStates.comment)
     if message.text == '.':
         if OrderStates.order_for_edit is None:
-            await message.answer("Ви не редагуєте замовлення" + order_msgs["address"])
+            await message.answer(ms.not_in_edit_mode_message + order_msgs["address"])
             return
 
         address = OrderStates.order_for_edit.address
     else:
         address = message.text
 
+    await state.set_state(OrderStates.comment)
     await state.update_data(address=address)
     await message.answer(order_msgs["comment"])
 
@@ -292,19 +297,20 @@ async def order_address_bad_input(message: Message, state: FSMContext):
 
 @order_router.message(OrderStates.comment, F.text)
 async def order_comment(message: Message, state: FSMContext):
+    items = None
     if message.text == '.':
         if OrderStates.order_for_edit is None:
-            await message.answer("Ви не редагуєте замовлення" + order_msgs["comment"])
+            await message.answer(ms.not_in_edit_mode_message + order_msgs["comment"])
             return
 
         comment = OrderStates.order_for_edit.description
+        items:list[OrderItemAssociation] = OrderStates.order_for_edit.items_details
     else:
         comment = message.text
 
     await state.set_state(OrderStates.items)
     await state.update_data(comment=comment)
-
-    items:list[OrderItemAssociation] = OrderStates.order_for_edit.items_details
+    
     data = await state.get_data()
     kb = make_web_app_kb(work_days=data["work_days"], items=items)
     await message.answer(order_msgs["items"], reply_markup=kb)
@@ -328,59 +334,27 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
             return
 
         user = await crud.get_user_by_tg_id(session=session, user_id=message.from_user.id)
-        if not OrderStates.order_for_edit:
-            order_dto = OrderCreate(
-                user_id=user.user_id,
-                date_start=state_data["date_start"],
-                date_end=state_data["date_end"],
-                work_days=state_data["work_days"],
-                address=state_data["address"],
-                description=state_data["comment"],
-            )
-            order = await crud.create_order_with_items(
-                session=session, order=order_dto, items=items
-            )
-            logger.info(f"[ORDER] ORDER FROM {user.name} {user.surname} ({message.from_user.id}) created: {order_dto}")
-        else:
-            order_update = OrderUpdate(
-                id = OrderStates.order_for_edit.id,
-                user_id=user.user_id,
-                date_start=state_data["date_start"],
-                date_end=state_data["date_end"],
-                work_days=state_data["work_days"],
-                address=state_data["address"],
-                description=state_data["comment"],
-            )
-            order = await crud.update_order_with_items(
-                session=session, order_update=order_update, items=items
-            )
-            logger.info(f"[ORDER] ORDER FROM {user.name} {user.surname} ({message.from_user.id}) updated: {order}")
+        order = await process_order_submission(
+            user=user,
+            state_data=state_data,
+            items=items,
+            order_for_edit=OrderStates.order_for_edit,
+            session=session,
+        )
 
         order_with_items = await crud.get_order_with_items(
             session=session, order_id=order.id
         )
-
-        order_text = OrderAdminMsgBuilder(
+        was_edited = bool(OrderStates.order_for_edit)
+        await notify_admin_new_order(
+            bot=message.bot,
             order=order_with_items,
-            items=order_with_items.items_details,
             user=user,
-        ).build_full_message()
-
-        await message.bot.send_message(
-            chat_id=settings.telegram.manager_id,
-            text=order_text,
-            reply_markup=make_admin_order_inline_kb(
-                order_id=order.id, status=order.status
-            ),
+            was_edited=was_edited,
         )
-
-        user_reply_message = (
-            ms.order_processing_message
-            + ". Слідкуйте за зміною статусу замовлення\n\n"
-            + OrderUserMsgBuilder(
-                order=order_with_items,
-                items=order_with_items.items_details,
-            ).build_full_message()
+        user_reply_message = build_user_confirmation_message(
+            order_with_items,
+            was_edited=was_edited,
         )
 
     except json.JSONDecodeError:
@@ -393,7 +367,6 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
 
     finally:
         await state.clear()
-
         await message.answer(user_reply_message, reply_markup=make_user_kb())
 
 

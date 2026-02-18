@@ -76,12 +76,14 @@ class OrderUserMsgBuilder(OrderBaseMsgBuilder):
 class OrderAdminMsgBuilder(OrderBaseMsgBuilder):
     """Message builder for admin-facing order messages with user contact details."""
     
-    def __init__(self, order: Order, items: list[OrderItemAssociation], user: User):
+    def __init__(self, order: Order, items: list[OrderItemAssociation], user: User, was_edited=False):
         super().__init__(order, items)
         self.user = user
+        self.was_edited = was_edited
 
     def get_header_text(self) -> str:
-        return (
-            f"Замовлення <b>#{self.order.id}</b> від {self.user.name} {self.user.surname} @{self.user.username or 'N/A'}\n"
-            f"{self.user.phone_number or 'N/A'}\n"
-        )
+        order_number = f"Замовлення <b>#{self.order.id}</b>"
+        user_info = f"Від {self.user.name} {self.user.surname} @{self.user.username or 'N/A'}\n{self.user.phone_number or 'N/A'}\n"
+        was_edit = "було змінено. " if self.was_edited else ""
+        
+        return f"{order_number} {was_edit} {user_info}"
