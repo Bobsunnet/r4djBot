@@ -90,4 +90,4 @@ def create_orders_count_dict(orders: list[Order]) -> dict[tuple[int, int], int]:
 
 
 def is_manager(user_id: int) -> bool:
-    return user_id == settings.telegram.manager_id
+    return user_id in settings.telegram.manager_ids

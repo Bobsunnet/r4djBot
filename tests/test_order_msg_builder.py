@@ -16,8 +16,8 @@ def test_order_user_msg_builder_header():
     builder = OrderUserMsgBuilder(order, items)
     header = builder.get_header_text()
     
-    # Assert: Header should only contain order ID
-    assert "Замовлення #42" in header
+    # Assert: Header should contain order ID with bold tags
+    assert "Замовлення <b>#42</b>" in header
     assert "@" not in header  # No user details
 
 
@@ -39,9 +39,9 @@ def test_order_admin_msg_builder_header():
     builder = OrderAdminMsgBuilder(order, items, user)
     header = builder.get_header_text()
     
-    # Assert: Header should contain user details
-    assert "Замовлення #42" in header
-    assert "Олександр Петренко" in header
+    # Assert: Header should contain user details and order ID with bold tags
+    assert "Замовлення <b>#42</b>" in header
+    assert "Від Олександр Петренко" in header
     assert "@alex_p" in header
     assert "+380961234567" in header
 
@@ -51,7 +51,7 @@ def test_order_preview_message():
     # Arrange: Create a realistic order mock
     order = MagicMock()
     order.id = 10
-    order.status.value = "Підтверджено"
+    order.status.value = "Очікує"
     order.date_start = date(2024, 2, 15)
     order.date_end = date(2024, 2, 17)
     order.work_days = 3
@@ -65,8 +65,8 @@ def test_order_preview_message():
     preview = builder.build_preview_message()
     
     # Assert: Should contain order details
-    assert "Замовлення #10" in preview
-    assert "Підтверджено" in preview
+    assert "Замовлення <b>#10</b>" in preview
+    assert "Очікує" in preview  # Translated "pending"
     assert "2024-02-15" in preview
     assert "2024-02-17" in preview
     assert "3" in preview
@@ -104,10 +104,10 @@ def test_order_full_message_with_items():
     builder = OrderUserMsgBuilder(order, items)
     full_message = builder.build_full_message()
     
-    # Assert: Should contain items
-    assert "Мікшерний пульт Yamaha × 2 шт." in full_message
-    assert "LED екран 3x2м × 1 шт." in full_message
-    assert "Замовлення #5" in full_message
+    # Assert: Should contain items formatted as bullet points
+    assert "• Мікшерний пульт Yamaha × 2 шт." in full_message
+    assert "• LED екран 3x2м × 1 шт." in full_message
+    assert "Замовлення <b>#5</b>" in full_message
 
 
 def test_admin_vs_user_message_difference():
@@ -151,3 +151,26 @@ def test_admin_vs_user_message_difference():
     assert "Завершено" in admin_msg
     assert "пр. Перемоги, 10" in user_msg
     assert "пр. Перемоги, 10" in admin_msg
+
+
+def test_order_admin_msg_builder_edited():
+    """Verify that admin builder handles 'was_edited' flag."""
+    # Arrange: Create mock order, user
+    order = MagicMock()
+    order.id = 77
+    
+    user = MagicMock()
+    user.name = "Марія"
+    user.surname = "Сидоренко"
+    user.username = None
+    user.phone_number = "+380441112233"
+    
+    items = []
+    
+    # Act: Create admin builder with was_edited=True
+    builder = OrderAdminMsgBuilder(order, items, user, was_edited=True)
+    header = builder.get_header_text()
+    
+    # Assert
+    assert "Замовлення <b>#77</b> було змінено." in header
+    assert "Від Марія Сидоренко @N/A" in header

@@ -74,3 +74,14 @@ def test_create_orders_count_dict():
     assert result[(2024, 1)] == 2
     assert result[(2024, 2)] == 1
     assert len(result) == 2
+
+
+def test_is_manager():
+    from unittest.mock import patch
+
+    with patch("utils.utils.settings") as mock_settings:
+        mock_settings.telegram.manager_ids = [123, 456]
+
+        assert utils.is_manager(123) is True
+        assert utils.is_manager(456) is True
+        assert utils.is_manager(789) is False

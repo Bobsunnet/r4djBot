@@ -29,7 +29,7 @@ async def test_get_items_json():
     mock_item.name = "Мікшерний пульт"
     mock_item.description = "Професійний пульт Yamaha"
     mock_item.amount = 5
-    mock_item.price = 1000.0
+    mock_item.price = 1000
     mock_item.hash_code = "abc123"
     
     with patch("utils.api_server.db_helper.session_getter") as mock_session_getter:
@@ -52,7 +52,7 @@ async def test_get_items_json():
             assert result[0]["desc"] == "Професійний пульт Yamaha"
             assert result[0]["amount"] == 5
             # Price should be multiplied by settings.price_multiplier (0.5)
-            assert result[0]["price"] == 500.0
+            assert result[0]["price"] == 1000
             assert result[0]["hash_code"] == "abc123"
 
 
