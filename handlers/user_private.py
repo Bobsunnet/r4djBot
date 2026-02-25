@@ -12,7 +12,7 @@ from db_handler import crud
 from filters import TextOrCommand
 from keyboards.inline import make_user_order_inline_kb
 from utils import messages as ms
-from utils.order_msg_builder import OrderUserMsgBuilder
+from utils.order_msg_builder import OrderDetailsUserMessage
 from utils.utils import create_orders_count_dict, format_plural_form_text
 
 user_private_router = Router()
@@ -67,7 +67,7 @@ async def process_order_calendar_user(
 
     for order in orders_for_month:
         await callback_query.message.answer(
-            OrderUserMsgBuilder(order, order.items_details).build_preview_message(),
+            OrderDetailsUserMessage(order, order.items_details).build_preview_message(),
             reply_markup=make_user_order_inline_kb(
                 order_id=order.id,
                 status=order.status,

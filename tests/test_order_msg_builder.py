@@ -1,7 +1,11 @@
 from datetime import date
 from unittest.mock import MagicMock
 
-from utils.order_msg_builder import OrderAdminMsgBuilder, OrderUserMsgBuilder
+from utils.order_msg_builder import (
+    OrderDetailsAdminMessage,
+    OrderDetailsUserMessage,
+    OrderPopupAdminMessage,
+)
 
 
 def test_order_user_msg_builder_header():
@@ -13,8 +17,8 @@ def test_order_user_msg_builder_header():
     items = []
     
     # Act: Create the builder and generate header
-    builder = OrderUserMsgBuilder(order, items)
-    header = builder.get_header_text()
+    builder = OrderDetailsUserMessage(order, items)
+    header = builder._get_header_text()
     
     # Assert: Header should contain order ID with bold tags
     assert "Замовлення <b>#42</b>" in header
@@ -36,8 +40,8 @@ def test_order_admin_msg_builder_header():
     items = []
     
     # Act: Create the admin builder
-    builder = OrderAdminMsgBuilder(order, items, user)
-    header = builder.get_header_text()
+    builder = OrderDetailsAdminMessage(order, items, user)
+    header = builder._get_header_text()
     
     # Assert: Header should contain user details and order ID with bold tags
     assert "Замовлення <b>#42</b>" in header
@@ -61,7 +65,7 @@ def test_order_preview_message():
     items = []
     
     # Act
-    builder = OrderUserMsgBuilder(order, items)
+    builder = OrderDetailsUserMessage(order, items)
     preview = builder.build_preview_message()
     
     # Assert: Should contain order details
@@ -101,7 +105,7 @@ def test_order_full_message_with_items():
     items = [item1, item2]
     
     # Act
-    builder = OrderUserMsgBuilder(order, items)
+    builder = OrderDetailsUserMessage(order, items)
     full_message = builder.build_full_message()
     
     # Assert: Should contain items formatted as bullet points
@@ -131,8 +135,8 @@ def test_admin_vs_user_message_difference():
     items = []
     
     # Act
-    user_builder = OrderUserMsgBuilder(order, items)
-    admin_builder = OrderAdminMsgBuilder(order, items, user)
+    user_builder = OrderDetailsUserMessage(order, items)
+    admin_builder = OrderDetailsAdminMessage(order, items, user)
     
     user_msg = user_builder.build_preview_message()
     admin_msg = admin_builder.build_preview_message()
@@ -168,9 +172,10 @@ def test_order_admin_msg_builder_edited():
     items = []
     
     # Act: Create admin builder with was_edited=True
-    builder = OrderAdminMsgBuilder(order, items, user, was_edited=True)
-    header = builder.get_header_text()
+    builder = OrderPopupAdminMessage(order, items, user, was_edited=True)
+    header = builder._get_header_text()
+    print(f"header: {header}")
     
     # Assert
-    assert "Замовлення <b>#77</b> було змінено." in header
+    assert "❗ Зміна замовлення Замовлення <b>#77</b>" in header
     assert "Від Марія Сидоренко @N/A" in header

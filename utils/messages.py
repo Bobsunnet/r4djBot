@@ -2,8 +2,11 @@ reload_help_message = "Спробуйте ще раз, перезавантаж�
 
 not_authorized_message = "На жаль, ви ще не зареєстровані в системі. Спочатку пройдіть реєстрацію, щоб мати можливість оформити замовлення"
 
+manager_new_order_message = "🆕 Нове замовлення"
+manager_edit_order_message = "❗ Зміна замовлення"
+
 order_processing_message = "✅ Ваше замовлення отримано"
-order_edited_message = "✏️ Ваше замовлення змінено"
+order_edited_message = "✏️ Ваше замовлення відредаговано"
 
 enter_name_message = "Введіть ваше Ім’я."
 enter_surname_message = "Введіть ваше Прізвище."

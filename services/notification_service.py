@@ -3,7 +3,7 @@ from aiogram import Bot
 from config import settings
 from db_handler.models import Order, User
 from keyboards.inline import make_admin_order_inline_kb
-from utils.order_msg_builder import OrderAdminMsgBuilder, OrderUserMsgBuilder
+from utils.order_msg_builder import OrderPopupAdminMessage, OrderPopupUserMessage
 
 
 class NotifiedManagers:
@@ -33,7 +33,7 @@ managers_notification_ids = NotifiedManagers(settings.telegram.manager_ids)
 
 
 async def notify_admin_new_order(bot: Bot, order: Order, user: User, was_edited=False):
-    order_text = OrderAdminMsgBuilder(
+    order_text = OrderPopupAdminMessage(
         order=order,
         user=user,
         items=order.items_details,
@@ -49,7 +49,7 @@ async def notify_admin_new_order(bot: Bot, order: Order, user: User, was_edited=
 
 
 def build_user_confirmation_message(order: Order, was_edited=False):
-    return OrderUserMsgBuilder(
+    return OrderPopupUserMessage(
         order=order,
         items=order.items_details,
         was_edited=was_edited,

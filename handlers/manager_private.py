@@ -21,7 +21,7 @@ from keyboards import (
     make_user_order_inline_kb,
 )
 from utils import messages as ms
-from utils.order_msg_builder import OrderAdminMsgBuilder
+from utils.order_msg_builder import OrderDetailsAdminMessage
 from utils.utils import (
     create_orders_count_dict,
     format_plural_form_text,
@@ -89,7 +89,7 @@ async def process_order_calendar_manager(
 
     for order in orders_for_month:
         await callback_query.message.answer(
-            OrderAdminMsgBuilder(
+            OrderDetailsAdminMessage(
                 order=order,
                 items=order.items_details,
                 user=order.user,
@@ -143,7 +143,7 @@ async def change_order_status(
     await session.commit()
 
     new_keyboard = make_admin_order_inline_kb(order_id=order.id, status=status)
-    new_msg_text = OrderAdminMsgBuilder(
+    new_msg_text = OrderDetailsAdminMessage(
         order=order,
         items=[],
         user=order.user,
@@ -204,7 +204,7 @@ async def cancel_delete_order(callback_query: CallbackQuery, callback_data: Dele
         await callback_query.answer("Замовлення не знайдено", show_alert=True)
         return
     
-    new_msg_text = OrderAdminMsgBuilder(
+    new_msg_text = OrderDetailsAdminMessage(
         order=order,
         items=[],
         user=order.user,
