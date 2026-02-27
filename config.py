@@ -15,7 +15,7 @@ TRUE_VALUES = ("true", "1")
 
 class TelegramSettings(BaseSettings):
     bot_token: str = os.getenv("BOT_TOKEN")
-    manager_id: int = int(os.getenv("MANAGER_ID", "0"))
+    manager_ids: list[int] = os.getenv("MANAGER_IDS", "")
     disable_notification: bool = (
         os.getenv("DISABLE_NOTIFICATION", "False").lower() in TRUE_VALUES
     )
@@ -39,7 +39,8 @@ class Settings(BaseSettings):
     debug: bool = os.getenv("DEBUG", "False").lower() in TRUE_VALUES
     LOG_DIR: Path = BASE_DIR / "logs"
     web_app_url: str = os.getenv("WEB_APP_URL")
-    price_multiplier: float = 0.5
+    price_multiplier: int = 1
 
 
 settings = Settings()
+print()

@@ -1,9 +1,10 @@
-from typing import Optional
 from enum import Enum
-
-from pydantic import BaseModel, conlist, Field
+from typing import Optional
 
 from aiogram.filters.callback_data import CallbackData
+from pydantic import BaseModel, Field, conlist
+
+from db_handler import OrderStatus
 
 
 class SimpleCalAct(str, Enum):
@@ -43,14 +44,25 @@ class DialogCalendarCallback(CalendarCallback, prefix="dialog_calendar"):
     act: DialogCalAct
 
 
+class ManagerCalendarCallback(CalendarCallback, prefix="manager_calendar"):
+    act: DialogCalAct
+    status: Optional[OrderStatus] = None
+
+
 class CalendarLabels(BaseModel):
     "Schema to pass labels for calendar. Can be used to put in different languages"
     days_of_week: conlist(str, max_length=7, min_length=7) = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
     months: conlist(str, max_length=12, min_length=12) = [
         "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
     ]
-    cancel_caption: str = Field(default='Cancel', description='Caprion for Cancel button')
-    today_caption: str = Field(default='Today', description='Caprion for Cancel button')
+    cancel_caption: str = Field(
+        default="Cancel",
+        description="Caption for Cancel button",
+    )
+    today_caption: str = Field(
+        default="Today",
+        description="Caption for Today button",
+    )
 
 
 HIGHLIGHT_FORMAT = "[{}]"

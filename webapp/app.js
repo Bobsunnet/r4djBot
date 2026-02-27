@@ -14,6 +14,8 @@ let cart = []; // Stores {item, quantity} objects
 
 const urlParams = new URLSearchParams(window.location.search);
 const workDays = parseInt(urlParams.get('work_days'));
+const itemsJson = urlParams.get('items');
+const preservedItems = itemsJson ? JSON.parse(decodeURIComponent(itemsJson)) : [];
 
 // DOM Elements
 const searchInput = document.getElementById('searchInput');
@@ -31,6 +33,17 @@ if (workDaysDisplay) {
     workDaysDisplay.textContent = workDays;
     if (workDaysLabel) {
         workDaysLabel.textContent = formatWorkDaysText(workDays, ['зміну', 'зміни', 'змін']);
+    }
+}
+
+
+function init_cart(items){
+    if (preservedItems.length > 0) {
+        cart = preservedItems.map(preservedItem => (
+            {
+            item: items.find(i => i.hash_code === preservedItem.hash_code),
+            quantity: preservedItem.quantity
+        }));
     }
 }
 
@@ -125,7 +138,10 @@ function renderItemsList(items) {
             <div class="item-info">
                 <div class="item-name">${escapeHtml(item.name)}</div>
                 ${item.desc ? `<div class="item-desc">${escapeHtml(item.desc)}</div>` : ''}
-                <div class="item-price">Доступно: ${item.amount}</div>
+                <div class="amount-price-container">
+                    <div class="item-amount">Доступно: ${escapeHtml(item.amount)}</div>
+                    <div class="item-price">Ціна: ${escapeHtml(item.price)}грн</div>
+                </div>
             </div>
             <div class="quantity-container">
                 <div class="quantity-info">
@@ -195,7 +211,6 @@ function updateAddButton(value, itemId) {
     const item_amount = allItems.find(i => i.id == itemId).amount;
     const addButton = document.getElementById(`qty-btn-${itemId}`);
     const inCartAmount = getCartQuantity(itemId);
-    console.log(`value: ${value}, item_amount: ${item_amount}, inCartAmount: ${inCartAmount}`);
 
     if ((value < 1) || (value > item_amount) || (value + inCartAmount > item_amount)) {
         addButton.disabled = true;
@@ -248,14 +263,22 @@ tg.MainButton.onClick(() => {
 });
 
 // Initialize
-loadItems().then(items => {
-    if (items) {
-        allItems = items;
+loadItems()
+.then(itms => {
+    if (itms) {
+        allItems = itms;
         renderItemsList(allItems);
     }
-});
+    return itms;
+})
+.then(itms => {
+    if (itms) {
+        init_cart(itms)
+    }
+    updateCartUI();
+})
 
-updateCartUI();
+
 tg.MainButton.show();
 
 window.addToCart = addToCart;

@@ -1,1 +1,1 @@
-from .custom import TextOrCommand
+from .custom import IsManager, TextOrCommand

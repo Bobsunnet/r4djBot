@@ -1,5 +1,29 @@
 import re
-from datetime import datetime
+from collections import Counter
+from datetime import date, datetime
+
+from config import settings
+from db_handler.models import Order, OrderStatus
+from utils import messages as ms
+
+
+def translate_status(status: OrderStatus) -> str:
+    return ms.STATUS_TRANSLATIONS.get(status.value, str(status.value))
+
+
+def format_plural_form_text(work_days: int, titles: list[str]) -> str:
+    """
+    Returns the correct plural form of a word based on the number of work days.
+    """
+    if 11 <= work_days % 100 <= 19:
+        return titles[2]
+
+    last_digit = work_days % 10
+    if last_digit == 1:
+        return titles[0]
+    if 2 <= last_digit <= 4:
+        return titles[1]
+    return titles[2]
 
 
 def validate_name(name: str) -> bool:
@@ -42,9 +66,9 @@ def is_valid_number(phone_number: str) -> bool:
     )
 
 
-def validate_date(date_str: str) -> bool:
+def validate_date(date_str: str) -> date| None:
     """validate date string in format some general formats"""
-    formats = ["%d.%m.%y", "%d.%m.%Y", "%d-%m-%y", "%d-%m-%Y"]
+    formats = ["%d.%m.%Y", "%d.%m.%y", "%d-%m-%y", "%d-%m-%Y"]
 
     for format in formats:
         try:
@@ -53,3 +77,17 @@ def validate_date(date_str: str) -> bool:
             pass
 
     return None
+
+
+def create_orders_count_dict(orders: list[Order]) -> dict[tuple[int, int], int]:
+    """
+    Creates a dictionary mapping (year, month) tuples to the count of orders.
+    """
+    orders_count_dict = Counter([
+        (order.date_start.year, order.date_start.month) for order in orders
+    ])
+    return orders_count_dict
+
+
+def is_manager(user_id: int) -> bool:
+    return user_id in settings.telegram.manager_ids

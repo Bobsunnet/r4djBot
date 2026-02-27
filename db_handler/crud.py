@@ -1,13 +1,14 @@
+from datetime import datetime
 from logging import getLogger
 from typing import List
 
-from sqlalchemy import select
+from sqlalchemy import extract, select
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
 from db_handler.models import Item, Order, OrderItemAssociation, OrderStatus, User
-from db_handler.schemas.order import OrderCreate
+from db_handler.schemas.order import OrderCreate, OrderUpdate
 from db_handler.schemas.user import UserCreate
 
 logger = getLogger(__name__)
@@ -25,6 +26,18 @@ async def get_user_by_tg_id(session: AsyncSession, user_id: int) -> User | None:
     result: Result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
+
+async def get_users(session: AsyncSession, limit=None, offset=0) -> List[User]:
+    if offset < 0:
+        offset = 0
+    
+    if limit is not None and limit < 0:
+        limit = None
+
+    stmt = select(User).options(selectinload(User.orders)).offset(offset).limit(limit)
+    result: Result = await session.execute(stmt)
+    users = result.scalars().all()
+    return list(users)
 
 async def create_user(session: AsyncSession, user: UserCreate) -> User:
     user = User(**user.model_dump())
@@ -52,6 +65,44 @@ async def create_order_with_items(
 
     await session.commit()
     return order_db
+
+
+async def update_order_with_items(order_update: OrderUpdate, session: AsyncSession, items: List[dict]) -> Order:
+    # order.items_details.clear()
+    order = await get_order_with_items(session=session, order_id=order_update.id)
+
+    order.date_start = order_update.date_start
+    order.date_end = order_update.date_end
+    order.work_days = order_update.work_days
+    order.address = order_update.address
+    order.description = order_update.description
+    order.status = order_update.status
+
+    existing_items = {assoc.item_hash_code: assoc for assoc in order.items_details}
+    
+    for item in items:
+        hash_code = item.get("hash_code")
+
+        if hash_code in existing_items:
+           assoc = existing_items.get(hash_code)
+           assoc.quantity = item.get("quantity")
+           existing_items.pop(hash_code)
+        
+        else:
+            order.items_details.append(
+                OrderItemAssociation(
+                    item_hash_code=item.get("hash_code"),
+                    quantity=item.get("quantity"),
+                    unit_price=item.get("price"),
+                )
+            )
+    
+    for assoc in existing_items.values():
+        order.items_details.remove(assoc)
+    
+    await session.commit()
+    await session.refresh(order)
+    return order
 
 
 async def get_orders_with_status(
@@ -107,11 +158,66 @@ async def get_orders_by_userid(
     """
     stmt = (
         select(Order)
-        .options(
-            selectinload(Order.items_details).joinedload(OrderItemAssociation.item)
-        )
+        # .options(
+        #     selectinload(Order.items_details).joinedload(OrderItemAssociation.item)
+        # )
         .where(Order.user_id == user_id)
     )
     result: Result = await session.execute(stmt)
     orders = result.scalars().all()
     return list(orders)
+
+
+async def get_orders_by_userid_and_date_start(
+    session: AsyncSession,
+    user_id: int,
+    date: datetime,
+):
+    stmt = (
+        select(Order).options(
+            selectinload(Order.items_details).joinedload(OrderItemAssociation.item)
+            )
+        .where(
+            Order.user_id == user_id,
+            extract("year", Order.date_start) == date.year,
+            extract("month", Order.date_start) == date.month,
+        )
+    )
+    result: Result = await session.execute(stmt)
+    orders = result.scalars().all()
+    return list(orders)
+
+
+async def get_orders_with_status_and_date_start(
+    session: AsyncSession,
+    status: OrderStatus,
+    date: datetime,
+):
+    stmt = (
+        select(Order)
+        .options(
+            joinedload(Order.user),
+            selectinload(Order.items_details).joinedload(OrderItemAssociation.item)
+        )
+        .where(
+            Order.status == status,
+            extract("year", Order.date_start) == date.year,
+            extract("month", Order.date_start) == date.month,
+        )
+    )
+    result: Result = await session.execute(stmt)
+    orders = result.scalars().all()
+    return list(orders)
+
+
+async def delete_order(session: AsyncSession, order_id: int) -> None:
+    """
+    Delete an order and its associated items manually.
+    Necessary because database cascade deletion is turned off.
+    """
+    order = await session.scalar(select(Order).where(Order.id == order_id))
+    if order:
+        await session.delete(order)
+        await session.commit()
+
+    

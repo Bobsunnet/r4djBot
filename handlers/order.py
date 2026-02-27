@@ -1,27 +1,32 @@
 import json
 import logging
+from datetime import datetime, timedelta
 
-from aiogram import F, Router
+from aiogram import Bot, F, Router
 from aiogram.filters import StateFilter
+from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import Message
+from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config import settings
+from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback, get_user_locale
 from db_handler import crud
-from db_handler.crud import get_user_by_tg_id
-from db_handler.schemas.order import OrderCreate
+from db_handler.models import Order, OrderItemAssociation
 from filters import TextOrCommand
 from keyboards.keyboard import (
-    make_auth_kb,
-    make_order_cancel_kb,
+    make_cancel_kb,
+    make_user_kb,
     make_web_app_kb,
     make_wo_auth_kb,
 )
+from services import process_order_submission
+from services.notification_service import (
+    build_user_confirmation_message,
+    notify_admin_new_order,
+)
 from utils import messages as ms
 from utils import utils
-from utils.order_msg_builder import OrderMsgBuilderFactory
 
 order_router = Router()
 
@@ -30,7 +35,8 @@ logger = logging.getLogger(__name__)
 
 
 order_msgs = {
-    "date": f"Введіть дати отримання і повернення обладнання у форматі:{ms.date_format_message}",
+    "date_start": "Оберіть дату отримання обладнання",
+    "date_end": "Оберіть дату повернення обладнання",
     "work_days": "Введіть кількість днів роботи одним числом, наприклад: 3",
     "address": "Введіть адресу та час доставки\nАбо час самовивозу зі складу (м. Київ, Здолбунівська 2)",
     "comment": "Введіть коментар до замовлення",
@@ -38,17 +44,60 @@ order_msgs = {
 }
 
 
+async def delete_last_msg(bot: Bot, chat_id: int, state: FSMContext):
+    data = await state.get_data()
+    if data.get("last_msg_id"):
+        try:
+            await bot.delete_message(chat_id=chat_id, message_id=data["last_msg_id"])
+        except Exception as e:
+            logger.error(f"Failed to delete message: {e}")
+
+
+def construct_calendar(locale: str):
+    today = datetime.today()
+    calendar = SimpleCalendar(locale=locale, show_alerts=True)
+    calendar.set_dates_range(datetime(today.year, today.month, today.day), today + timedelta(days=365))
+    return calendar
+
+
 class OrderStates(StatesGroup):
-    date = State()
+    date_start = State()
+    date_end = State()
     work_days = State()
     address = State()
     comment = State()
     items = State()
 
+    order_for_edit: Order | None = None
+
+
+@order_router.callback_query(StateFilter(None), F.data.startswith("edit_order"))
+async def order_edit(callback_query: CallbackQuery, state: FSMContext, session: AsyncSession):
+    order_orm = await crud.get_order_with_items(
+        session=session,
+        order_id=int(callback_query.data.split("_")[2]),
+    )
+    if not order_orm:
+        await callback_query.answer("Замовлення не знайдено", show_alert=True)
+        await state.clear()
+        return 
+    
+    await callback_query.message.answer(
+        "Починаємо редагування замовлення, для пропуску кроку введіть . (крапку)", reply_markup=make_cancel_kb()
+    )
+    await state.set_state(OrderStates.date_start)
+    OrderStates.order_for_edit = order_orm
+    calendar = construct_calendar(await get_user_locale(callback_query.from_user))
+    msg = await callback_query.message.answer(
+        order_msgs["date_start"],
+        reply_markup=await calendar.start_calendar(),
+    )
+    await state.update_data(last_msg_id=msg.message_id)
+
 
 @order_router.message(TextOrCommand("order"))
 async def order_start(message: Message, state: FSMContext, session: AsyncSession):
-    user = await get_user_by_tg_id(session=session, user_id=message.from_user.id)
+    user = await crud.get_user_by_tg_id(session=session, user_id=message.from_user.id)
     if not user:
         await message.answer(
             ms.not_authorized_message,
@@ -58,11 +107,89 @@ async def order_start(message: Message, state: FSMContext, session: AsyncSession
         return
 
     await state.clear()
-    await state.set_state(OrderStates.date)
+    await state.set_state(OrderStates.date_start)
     await message.answer(
-        order_msgs["date"],
-        reply_markup=make_order_cancel_kb(),
+        "Починаємо оформлення замовлення", reply_markup=make_cancel_kb()
     )
+    calendar = construct_calendar(await get_user_locale(message.from_user))
+    msg = await message.answer(
+        order_msgs["date_start"],
+        reply_markup=await calendar.start_calendar(),
+    )
+    await state.update_data(last_msg_id=msg.message_id)
+
+
+@order_router.message(OrderStates.date_start, F.text == ".")
+async def edit_date_start(message: Message, state: FSMContext):
+    calendar = construct_calendar(await get_user_locale(message.from_user))
+    if OrderStates.order_for_edit is None:
+        text = "Дату початку ще не обрано. Оберіть дату початку"
+    else:
+        text = order_msgs["date_end"]
+        await state.update_data(date_start=OrderStates.order_for_edit.date_start)
+        await state.set_state(OrderStates.date_end)
+
+    msg = await message.answer(
+        text,
+        reply_markup=await calendar.start_calendar(),
+    )
+    await state.update_data(last_msg_id=msg.message_id)
+
+
+@order_router.message(OrderStates.date_end, F.text == ".")
+async def edit_date_end(message: Message, state: FSMContext):
+    calendar = construct_calendar(await get_user_locale(message.from_user))
+    if OrderStates.order_for_edit is None:
+        msg = await message.answer(
+            "Дату повернення ще не обрано. Оберіть дату повернення",
+            reply_markup=await calendar.start_calendar(),
+        )
+        await state.update_data(last_msg_id=msg.message_id)
+        return 
+
+    await state.update_data(date_end=OrderStates.order_for_edit.date_end)
+    await state.set_state(OrderStates.work_days)
+
+    msg = await message.answer(order_msgs["work_days"])
+    await state.update_data(last_msg_id=msg.message_id)
+
+
+@order_router.callback_query(OrderStates.date_start, SimpleCalendarCallback.filter())
+async def process_date_start_calendar(
+    callback_query: CallbackQuery, callback_data: CallbackData, state: FSMContext
+):
+    calendar = construct_calendar(await get_user_locale(callback_query.from_user))
+    selected, date = await calendar.process_selection(callback_query, callback_data)
+    if selected:
+        await state.update_data(date_start=date)
+        await state.set_state(OrderStates.date_end)
+        await callback_query.message.edit_text(
+            f"Дата отримання обладнання: {date.strftime('%d.%m.%Y')}"
+        )
+
+        msg = await callback_query.message.answer(
+            order_msgs["date_end"],
+            reply_markup=await calendar.start_calendar(),
+        )
+        await state.update_data(last_msg_id=msg.message_id)
+
+
+@order_router.callback_query(OrderStates.date_end, SimpleCalendarCallback.filter())
+async def process_date_end_calendar(
+    callback_query: CallbackQuery, callback_data: CallbackData, state: FSMContext
+):
+    calendar = construct_calendar(await get_user_locale(callback_query.from_user))
+    selected, date = await calendar.process_selection(callback_query, callback_data)
+    if selected:
+        await state.update_data(date_end=date)
+        await state.set_state(OrderStates.work_days)
+        await callback_query.message.edit_text(
+            f"Дата повернення обладнання: {date.strftime('%d.%m.%Y')}"
+        )
+        msg = await callback_query.message.answer(
+            order_msgs["work_days"],
+        )
+        await state.update_data(last_msg_id=msg.message_id)
 
 
 @order_router.message(StateFilter(OrderStates), F.command("cancel"))
@@ -73,73 +200,67 @@ async def order_cancel(message: Message, state: FSMContext):
         return
 
     await state.clear()
-    await message.answer("Процес замовлення зупинено", reply_markup=make_auth_kb())
+    await message.answer("Процес замовлення зупинено", reply_markup=make_user_kb())
 
 
 @order_router.message(StateFilter(OrderStates), F.command("back"))
 @order_router.message(StateFilter(OrderStates), F.text.casefold() == "back")
 async def order_back(message: Message, state: FSMContext):
     current_state = await state.get_state()
-    if current_state == OrderStates.date:
-        await message.answer(
-            "Не можливо повернутися на попредній крок, так як це перший. Для виходу натисніть кнопку 'Cancel'"
-            + "\n\n"
-            + order_msgs["date"]
+    await message.delete()
+    calendar = construct_calendar(await get_user_locale(message.from_user))
+    if current_state == OrderStates.date_start:
+        answer_text = "Не можливо повернутися на попредній крок, так як це перший. Для виходу натисніть кнопку 'Cancel'\n\n"
+        answer_text += order_msgs["date_start"]
+        msg = await message.answer(
+            answer_text,
+            reply_markup=await calendar.start_calendar(),
         )
+        await delete_last_msg(bot=message.bot, chat_id=message.chat.id, state=state)
+        await state.update_data(last_msg_id=msg.message_id)
         return
 
     previous = None
     for state_step in OrderStates.__all_states__:
         if state_step == current_state:
             await state.set_state(previous)
-            await message.answer(
-                order_msgs[previous.state.split(":")[-1]],
-                reply_markup=make_order_cancel_kb(),
-            )
-            return
+            break
 
         previous = state_step
-
-
-@order_router.message(OrderStates.date, F.text)
-async def order_date(message: Message, state: FSMContext):
-    await state.set_state(OrderStates.work_days)
-    try:
-        start_date, end_date = utils.extract_date(message.text)
-        start_date = utils.validate_date(start_date)
-        end_date = utils.validate_date(end_date)
-        if not start_date or not end_date:
-            await state.set_state(OrderStates.date)
-            await message.answer(
-                f"Вказано неіснуючу дату. Введіть дати у форматі:{ms.date_format_message}"
-            )
-            return
-
-        await state.update_data({"start_date": start_date, "end_date": end_date})
-        await message.answer(order_msgs["work_days"])
-    except ValueError:
-        await state.set_state(OrderStates.date)
-        await message.answer(
-            f"Невірний формат дати. Введіть дати у форматі:{ms.date_format_message}"
+    
+    if previous == OrderStates.date_end or previous == OrderStates.date_start:
+        msg = await message.answer(
+            order_msgs[previous.state.split(":")[-1]],
+            reply_markup=await calendar.start_calendar(),
         )
+        await delete_last_msg(bot=message.bot, chat_id=message.chat.id, state=state)
+        await state.update_data(last_msg_id=msg.message_id)
+        return
 
-
-@order_router.message(OrderStates.date)
-async def order_date_bad_input(message: Message, state: FSMContext):
-    await message.answer(ms.bad_input_message + "\n\n" + order_msgs["date"])
+    await message.answer(
+        order_msgs[previous.state.split(":")[-1]],
+        reply_markup=make_cancel_kb(),
+    )
 
 
 @order_router.message(OrderStates.work_days, F.text)
 async def order_work_days(message: Message, state: FSMContext):
-    await state.set_state(OrderStates.address)
-    work_days = utils.work_days_validation(message.text)
+    if message.text == '.':
+        if OrderStates.order_for_edit is None:
+            await message.answer(ms.not_in_edit_mode_message + order_msgs["work_days"])
+            return
 
+        work_days = OrderStates.order_for_edit.work_days
+    else:
+        work_days = utils.work_days_validation(message.text)
+
+    await state.set_state(OrderStates.address)
     if work_days:
-        if work_days > 365:
+        if work_days > 365: # todo: get rid of this check
             await state.clear()
             await message.answer(
                 "Здається ви плануєте оренду більше 365 днів. Зв’яжіться з менеджером напряму",
-                reply_markup=make_auth_kb(),
+                reply_markup=make_user_kb(),
             )
             return
 
@@ -159,8 +280,17 @@ async def order_work_days_bad_input(message: Message, state: FSMContext):
 
 @order_router.message(OrderStates.address, F.text)
 async def order_address(message: Message, state: FSMContext):
+    if message.text == '.':
+        if OrderStates.order_for_edit is None:
+            await message.answer(ms.not_in_edit_mode_message + order_msgs["address"])
+            return
+
+        address = OrderStates.order_for_edit.address
+    else:
+        address = message.text
+
     await state.set_state(OrderStates.comment)
-    await state.update_data(address=message.text)
+    await state.update_data(address=address)
     await message.answer(order_msgs["comment"])
 
 
@@ -171,14 +301,23 @@ async def order_address_bad_input(message: Message, state: FSMContext):
 
 @order_router.message(OrderStates.comment, F.text)
 async def order_comment(message: Message, state: FSMContext):
-    await state.set_state(OrderStates.items)
-    await state.update_data(comment=message.text)
-    data = await state.get_data()
+    items = None
+    if message.text == '.':
+        if OrderStates.order_for_edit is None:
+            await message.answer(ms.not_in_edit_mode_message + order_msgs["comment"])
+            return
 
-    await message.answer(
-        order_msgs["items"],
-        reply_markup=make_web_app_kb(data["work_days"]),
-    )
+        comment = OrderStates.order_for_edit.description
+        items:list[OrderItemAssociation] = OrderStates.order_for_edit.items_details
+    else:
+        comment = message.text
+
+    await state.set_state(OrderStates.items)
+    await state.update_data(comment=comment)
+    
+    data = await state.get_data()
+    kb = make_web_app_kb(work_days=data["work_days"], items=items)
+    await message.answer(order_msgs["items"], reply_markup=kb)
 
 
 @order_router.message(OrderStates.comment)
@@ -195,45 +334,31 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
         web_app_data = json.loads(message.web_app_data.data)
         items = web_app_data.get("items", [])
         if not items:
-            user_reply_message = "Ви не вибрали жодного товару"
+            user_reply_message = "Ви не вибрали жодної позиції обладнання"
             return
 
-        user = await get_user_by_tg_id(session=session, user_id=message.from_user.id)
-        order_dto = OrderCreate(
-            user_id=user.user_id,
-            date_start=state_data["start_date"],
-            date_end=state_data["end_date"],
-            work_days=state_data["work_days"],
-            address=state_data["address"],
-            description=state_data["comment"],
+        user = await crud.get_user_by_tg_id(session=session, user_id=message.from_user.id)
+        order = await process_order_submission(
+            user=user,
+            state_data=state_data,
+            items=items,
+            order_for_edit=OrderStates.order_for_edit,
+            session=session,
         )
-        order = await crud.create_order_with_items(
-            session=session, order=order_dto, items=items
-        )
+
         order_with_items = await crud.get_order_with_items(
             session=session, order_id=order.id
         )
-
-        logger.info(f"[ORDER] ORDER FROM {user.name} {user.surname} ({message.from_user.id}) created: {order_dto}")
-        order_text = OrderMsgBuilderFactory.get_builder(
-            user=user,
+        was_edited = bool(OrderStates.order_for_edit)
+        await notify_admin_new_order(
+            bot=message.bot,
             order=order_with_items,
-            items=order_with_items.items_details,
-        ).build_full_message()
-
-        await message.bot.send_message(
-            chat_id=settings.telegram.manager_id, text=order_text
+            user=user,
+            was_edited=was_edited,
         )
-
-        await message.bot.send_message(chat_id=894956776, text=order_text) # TODO : replace with settings.telegram managers list
-
-        user_reply_message = (
-            ms.order_processing_message
-            + ". Менеджер зв'яжеться з вами для підтвердження\n\n"
-            + OrderMsgBuilderFactory.get_builder(
-                order=order_with_items,
-                items=order_with_items.items_details,
-            ).build_full_message()
+        user_reply_message = build_user_confirmation_message(
+            order_with_items,
+            was_edited=was_edited,
         )
 
     except json.JSONDecodeError:
@@ -246,9 +371,10 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
 
     finally:
         await state.clear()
-        await message.answer(user_reply_message, reply_markup=make_auth_kb())
+        await message.answer(user_reply_message, reply_markup=make_user_kb())
+
 
 
 @order_router.message(OrderStates.items)
 async def order_items_bad_input(message: Message, state: FSMContext):
-    await message.answer(ms.bad_input_message + "\n\n" + order_msgs["items"])
+    await message.answer("Не вірні дані\n\n" + order_msgs["items"])

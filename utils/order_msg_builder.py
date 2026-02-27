@@ -1,28 +1,32 @@
 from aiogram import html
 
-from config import settings
 from db_handler.models import Order, OrderItemAssociation, User
+from utils import messages as ms
+from utils import utils
 
-
-class OrderMsgBuilderFactory:
-    @staticmethod
-    def get_builder(order: Order, items: list[OrderItemAssociation], user: User = None):
-        if user:
-            return OrderAdminMsgBuilder(order, items, user)
-        return OrderUserMsgBuilder(order, items)
+titles = ['зміну', 'зміни', 'змін']
 
 
 class OrderBaseMsgBuilder:
-    def __init__(self, order: Order, items: list[OrderItemAssociation]):
+    """Base class for building order messages with common formatting logic."""
+    
+    def __init__(self, order: Order, items: list[OrderItemAssociation], was_edited: bool = False):
         self.order = order
         self.items = items
+        self.was_edited = was_edited
 
-    def get_header_text(self) -> str:
-        return f"Замовлення #{self.order.id}."
+    def _build_items_text(self) -> str:
+        items_text = ""
+        for entry in self.items:
+            items_text += f"• {html.quote(entry.item.name)} × {entry.quantity} шт.\n"
+        return items_text
 
-    def _order_preview_message(self) -> str:
+    def get_general_header_text(self) -> str:
+        return f"Замовлення <b>#{self.order.id}</b>\n"
+
+    def _build_order_text(self) -> str:
         order_text = (
-            f"Статус: *{self.order.status.value}*\n"
+            f"Статус: <b>{utils.translate_status(self.order.status)}</b>\n"
             f"Початок оренди: {self.order.date_start}\n"
             f"Кінець оренди: {self.order.date_end}\n"
             f"Кількість днів роботи: {self.order.work_days}\n"
@@ -31,42 +35,82 @@ class OrderBaseMsgBuilder:
         )
         return order_text
 
-    def _order_full_message(self) -> str:
+    def _count_items_cost(self) -> int:
+        cost_per_day = sum(entry.unit_price * entry.quantity for entry in self.items)
+        return cost_per_day * self.order.work_days
+
+    def _build_total_cost_text(self) -> str:
+        if not self.items:
+            return ""
+
+        order_text = "_" * 30 + "\n"
+        day_text = utils.format_plural_form_text(self.order.work_days, titles)
+        order_text += f"Загальна вартість оренди за {self.order.work_days} {day_text}: {self._count_items_cost()} грн"
+        return order_text
+
+    def _order_with_items_text(self, show_price: bool = False) -> str:
         """
         Builds the order message with user details and items.
-        """
-        order_text = self._order_preview_message()
-        for entry in self.items:
-            order_text += f"• {html.quote(entry.item.name)} × {entry.quantity} шт.\n"
+        """        
+        order_text = self._build_order_text()
+        order_text += self._build_items_text()
+        if show_price:
+            order_text += self._build_total_cost_text()
 
         return order_text
 
-    def build_full_message(self) -> str:
-        text = f"{self.get_header_text()}\n"
-        text += self._order_full_message()
+    def build_preview_message(self)-> str:
+        head = self._get_header_text()
+        return head + self._build_order_text()
+
+    def build_full_message(self)-> str:
+        text = self.build_preview_message()
+        text += self._build_items_text()
         return text
-
-    def build_preview_message(self) -> str:
-        text = f"{self.get_header_text()}\n"
-        text += self._order_preview_message()
-        return text
+    
+    def get_order_info_header(self):
+        super().get_general_header_text()
 
 
-class OrderUserMsgBuilder(OrderBaseMsgBuilder):
-    def __init__(self, order: Order, items: list[OrderItemAssociation]):
-        super().__init__(order, items)
-
-    def get_header_text(self) -> str:
-        return f"Замовлення #{self.order.id}.\n"
+class OrderUserMessageBuilder(OrderBaseMsgBuilder):
+    pass
 
 
-class OrderAdminMsgBuilder(OrderBaseMsgBuilder):
-    def __init__(self, order: Order, items: list[OrderItemAssociation], user: User):
-        super().__init__(order, items)
+class OrderAdminMessageBuilder(OrderBaseMsgBuilder):
+    def __init__(self, order: Order, items: list[OrderItemAssociation], user: User, was_edited: bool = False):
+        super().__init__(order, items, was_edited)
         self.user = user
 
-    def get_header_text(self) -> str:
-        return (
-            f"Замовлення #{self.order.id} від {self.user.name} {self.user.surname} @{self.user.username or 'N/A'}\n"
-            f"{self.user.phone_number or 'N/A'}\n"
-        )
+
+class OrderPopupAdminMessage(OrderAdminMessageBuilder):
+    def _get_header_text(self) -> str:
+        status_icon = ms.manager_edit_order_message if self.was_edited else ms.manager_new_order_message
+        order_info = super().get_general_header_text().strip()
+        user_info = f"Від {self.user.name} {self.user.surname} @{self.user.username or 'N/A'}\n{self.user.phone_number or 'N/A'}"
+
+        return f"{status_icon} {order_info}\n{user_info}\n"
+
+
+class OrderDetailsAdminMessage(OrderAdminMessageBuilder):
+    def _get_header_text(self) -> str:
+        order_info = super().get_general_header_text().strip()
+        user_info = f"Від {self.user.name} {self.user.surname} @{self.user.username or 'N/A'}\n{self.user.phone_number or 'N/A'}"
+
+        return f"{order_info}\n{user_info}\n"
+
+
+class OrderPopupUserMessage(OrderUserMessageBuilder):
+    def _get_header_text(self) -> str:
+        header = ms.order_edited_message if self.was_edited else ms.order_processing_message
+        return f"{header}. Cлідкуйте за зміною статусу замовлення\n\n{super().get_general_header_text()}"
+
+
+class OrderDetailsUserMessage(OrderUserMessageBuilder):
+    """Message builder for user-facing order messages (no contact details)."""
+    
+    def _get_header_text(self) -> str:
+        return super().get_general_header_text()
+
+
+
+    
