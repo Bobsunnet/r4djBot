@@ -73,16 +73,20 @@ class OrderStates(StatesGroup):
 
 @order_router.callback_query(StateFilter(None), F.data.startswith("edit_order"))
 async def order_edit(callback_query: CallbackQuery, state: FSMContext, session: AsyncSession):
-    await callback_query.message.answer(
-        "Починаємо редагування замовлення, для пропуску кроку введіть . (крапку)", reply_markup=make_cancel_kb()
-    )
-    await state.set_state(OrderStates.date_start)
     order_orm = await crud.get_order_with_items(
         session=session,
         order_id=int(callback_query.data.split("_")[2]),
     )
+    if not order_orm:
+        await callback_query.answer("Замовлення не знайдено", show_alert=True)
+        await state.clear()
+        return 
+    
+    await callback_query.message.answer(
+        "Починаємо редагування замовлення, для пропуску кроку введіть . (крапку)", reply_markup=make_cancel_kb()
+    )
+    await state.set_state(OrderStates.date_start)
     OrderStates.order_for_edit = order_orm
-
     calendar = construct_calendar(await get_user_locale(callback_query.from_user))
     msg = await callback_query.message.answer(
         order_msgs["date_start"],

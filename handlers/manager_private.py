@@ -1,6 +1,6 @@
 import enum
 
-from aiogram import F, Router
+from aiogram import F, Router, html
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardButton
@@ -217,7 +217,7 @@ async def cancel_delete_order(callback_query: CallbackQuery, callback_data: Dele
 @manager_router.callback_query(OrderCallbackData.filter(F.action == OrderAction.DELETE))
 async def delete_order(callback_query: CallbackQuery, callback_data: OrderCallbackData, session: AsyncSession):
     order_id = callback_data.order_id
-    old_msg = callback_query.message.text
+    old_msg = html.quote(callback_query.message.text)
     builder = InlineKeyboardBuilder()
     builder.add(
         InlineKeyboardButton(
