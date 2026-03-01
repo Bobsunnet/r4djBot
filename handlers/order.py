@@ -301,17 +301,22 @@ async def order_address_bad_input(message: Message, state: FSMContext):
 
 @order_router.message(OrderStates.comment, F.text)
 async def order_comment(message: Message, state: FSMContext):
-    items = None
+    items = None 
+    
+    if OrderStates.order_for_edit:
+        items = OrderStates.order_for_edit.items_details
+    
     if message.text == '.':
         if OrderStates.order_for_edit is None:
             await message.answer(ms.not_in_edit_mode_message + order_msgs["comment"])
             return
 
         comment = OrderStates.order_for_edit.description
-        items:list[OrderItemAssociation] = OrderStates.order_for_edit.items_details
+        
     else:
         comment = message.text
 
+    
     await state.set_state(OrderStates.items)
     await state.update_data(comment=comment)
     

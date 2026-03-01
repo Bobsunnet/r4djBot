@@ -89,7 +89,7 @@ def make_user_order_inline_kb(order_id: int, status: OrderStatus):
             text="Детальніше",
             callback_data=f"show_details_{order_id}",
         )], [InlineKeyboardButton(
-            text="Редагувати",
+            text="Редагувати(beta)",
             callback_data=f"edit_order_{order_id}",
         )]],
     )
