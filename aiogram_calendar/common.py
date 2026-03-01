@@ -6,11 +6,25 @@ from aiogram.types import User
 
 from .schemas import CalendarLabels
 
+LOCALE_DICT = {
+    "ru": ("ru_RU", "ru_RU.UTF-8"),
+    "uk": ("uk_UA", "uk_UA.UTF-8"),
+    "en": ("en_US", "en_US.UTF-8"),
+}
 
 async def get_user_locale(from_user: User) -> str:
     "Returns user locale in format en_US, accepts User instance from Message, CallbackData etc"
-    loc = from_user.language_code
-    return locale.locale_alias[loc].split(".")[0]
+    locale_key = from_user.language_code
+    for loc in LOCALE_DICT.get(locale_key, ("en1_US", "en1_US.utf8")):
+        try:
+            locale.setlocale(locale.LC_TIME, loc)
+            return loc
+        except locale.Error:
+            continue
+
+    return 'C'
+
+    # return locale.locale_alias[loc].split(".")[0]
 
 
 class GenericCalendar:
