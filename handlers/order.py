@@ -68,15 +68,18 @@ class OrderStates(StatesGroup):
     comment = State()
     items = State()
 
-    order_for_edit: Order | None = None
-
 
 @order_router.callback_query(StateFilter(None), F.data.startswith("edit_order"))
 async def order_edit(callback_query: CallbackQuery, state: FSMContext, session: AsyncSession):
+    logger.info(f'start order editing, callback_query= {callback_query.data}')
+    await state.clear()
+
     order_orm = await crud.get_order_with_items(
         session=session,
         order_id=int(callback_query.data.split("_")[2]),
     )
+    logger.info(order_orm)
+    
     if not order_orm:
         await callback_query.answer("Замовлення не знайдено", show_alert=True)
         await state.clear()
@@ -86,7 +89,7 @@ async def order_edit(callback_query: CallbackQuery, state: FSMContext, session: 
         "Починаємо редагування замовлення, для пропуску кроку введіть . (крапку)", reply_markup=make_cancel_kb()
     )
     await state.set_state(OrderStates.date_start)
-    OrderStates.order_for_edit = order_orm
+    await state.update_data(order_id_for_edit=order_orm.id)
     calendar = construct_calendar(await get_user_locale(callback_query.from_user))
     msg = await callback_query.message.answer(
         order_msgs["date_start"],
@@ -120,14 +123,21 @@ async def order_start(message: Message, state: FSMContext, session: AsyncSession
 
 
 @order_router.message(OrderStates.date_start, F.text == ".")
-async def edit_date_start(message: Message, state: FSMContext):
+async def edit_date_start(message: Message, state: FSMContext, session: AsyncSession):
     calendar = construct_calendar(await get_user_locale(message.from_user))
-    if OrderStates.order_for_edit is None:
+    data = await state.get_data()
+    order_id = data.get("order_id_for_edit")
+    
+    if order_id is None:
         text = "Дату початку ще не обрано. Оберіть дату початку"
     else:
-        text = order_msgs["date_end"]
-        await state.update_data(date_start=OrderStates.order_for_edit.date_start)
-        await state.set_state(OrderStates.date_end)
+        order_orm = await crud.get_order_with_items(session, order_id)
+        if order_orm:
+            text = order_msgs["date_end"]
+            await state.update_data(date_start=order_orm.date_start)
+            await state.set_state(OrderStates.date_end)
+        else:
+            text = "Замовлення для редагування не знайдено. Оберіть дату початку"
 
     msg = await message.answer(
         text,
@@ -137,9 +147,12 @@ async def edit_date_start(message: Message, state: FSMContext):
 
 
 @order_router.message(OrderStates.date_end, F.text == ".")
-async def edit_date_end(message: Message, state: FSMContext):
+async def edit_date_end(message: Message, state: FSMContext, session: AsyncSession):
     calendar = construct_calendar(await get_user_locale(message.from_user))
-    if OrderStates.order_for_edit is None:
+    data = await state.get_data()
+    order_id = data.get("order_id_for_edit")
+
+    if order_id is None:
         msg = await message.answer(
             "Дату повернення ще не обрано. Оберіть дату повернення",
             reply_markup=await calendar.start_calendar(),
@@ -147,7 +160,12 @@ async def edit_date_end(message: Message, state: FSMContext):
         await state.update_data(last_msg_id=msg.message_id)
         return 
 
-    await state.update_data(date_end=OrderStates.order_for_edit.date_end)
+    order_orm = await crud.get_order_with_items(session, order_id)
+    if not order_orm:
+        await message.answer("Замовлення для редагування не знайдено")
+        return
+
+    await state.update_data(date_end=order_orm.date_end)
     await state.set_state(OrderStates.work_days)
 
     msg = await message.answer(order_msgs["work_days"])
@@ -244,13 +262,20 @@ async def order_back(message: Message, state: FSMContext):
 
 
 @order_router.message(OrderStates.work_days, F.text)
-async def order_work_days(message: Message, state: FSMContext):
+async def order_work_days(message: Message, state: FSMContext, session: AsyncSession):
+    data = await state.get_data()
+    order_id = data.get("order_id_for_edit")
+
     if message.text == '.':
-        if OrderStates.order_for_edit is None:
+        if order_id is None:
             await message.answer(ms.not_in_edit_mode_message + order_msgs["work_days"])
             return
 
-        work_days = OrderStates.order_for_edit.work_days
+        order_orm = await crud.get_order_with_items(session, order_id)
+        if not order_orm:
+            await message.answer("Замовлення для редагування не знайдено")
+            return
+        work_days = order_orm.work_days
     else:
         work_days = utils.work_days_validation(message.text)
 
@@ -279,13 +304,20 @@ async def order_work_days_bad_input(message: Message, state: FSMContext):
 
 
 @order_router.message(OrderStates.address, F.text)
-async def order_address(message: Message, state: FSMContext):
+async def order_address(message: Message, state: FSMContext, session: AsyncSession):
+    data = await state.get_data()
+    order_id = data.get("order_id_for_edit")
+
     if message.text == '.':
-        if OrderStates.order_for_edit is None:
+        if order_id is None:
             await message.answer(ms.not_in_edit_mode_message + order_msgs["address"])
             return
 
-        address = OrderStates.order_for_edit.address
+        order_orm = await crud.get_order_with_items(session, order_id)
+        if not order_orm:
+            await message.answer("Замовлення для редагування не знайдено")
+            return
+        address = order_orm.address
     else:
         address = message.text
 
@@ -300,18 +332,25 @@ async def order_address_bad_input(message: Message, state: FSMContext):
 
 
 @order_router.message(OrderStates.comment, F.text)
-async def order_comment(message: Message, state: FSMContext):
+async def order_comment(message: Message, state: FSMContext, session: AsyncSession):
     items = None 
-    
-    if OrderStates.order_for_edit:
-        items = OrderStates.order_for_edit.items_details
+    data = await state.get_data()
+    order_id = data.get("order_id_for_edit")
+
+    if order_id:
+        order_orm = await crud.get_order_with_items(session, order_id)
+        if order_orm:
+            items = order_orm.items_details
     
     if message.text == '.':
-        if OrderStates.order_for_edit is None:
+        if order_id is None:
             await message.answer(ms.not_in_edit_mode_message + order_msgs["comment"])
             return
 
-        comment = OrderStates.order_for_edit.description
+        if not order_orm:
+             await message.answer("Замовлення для редагування не знайдено")
+             return
+        comment = order_orm.description
         
     else:
         comment = message.text
@@ -320,8 +359,8 @@ async def order_comment(message: Message, state: FSMContext):
     await state.set_state(OrderStates.items)
     await state.update_data(comment=comment)
     
-    data = await state.get_data()
     kb = make_web_app_kb(work_days=data["work_days"], items=items)
+    logger.info(f"Send items to web app = {items}")
     await message.answer(order_msgs["items"], reply_markup=kb)
 
 
@@ -333,28 +372,35 @@ async def order_comment_bad_input(message: Message, state: FSMContext):
 @order_router.message(OrderStates.items, F.web_app_data)
 async def order_final(message: Message, state: FSMContext, session: AsyncSession):
     """Process order data sent from the Web App."""
+    user_reply_message = ms.failed_to_send_order_message
 
     try:
         state_data = await state.get_data()
         web_app_data = json.loads(message.web_app_data.data)
         items = web_app_data.get("items", [])
         if not items:
-            user_reply_message = "Ви не вибрали жодної позиції обладнання"
+            await message.answer("Ви не вибрали жодної позиції обладнання", reply_markup=make_user_kb())
+            await state.clear()
             return
+
+        order_id = state_data.get("order_id_for_edit")
+        order_for_edit = None
+        if order_id:
+            order_for_edit = await crud.get_order_with_items(session, order_id)
 
         user = await crud.get_user_by_tg_id(session=session, user_id=message.from_user.id)
         order = await process_order_submission(
             user=user,
             state_data=state_data,
             items=items,
-            order_for_edit=OrderStates.order_for_edit,
+            order_for_edit=order_for_edit,
             session=session,
         )
 
         order_with_items = await crud.get_order_with_items(
             session=session, order_id=order.id
         )
-        was_edited = bool(OrderStates.order_for_edit)
+        was_edited = bool(order_for_edit)
         await notify_admin_new_order(
             bot=message.bot,
             order=order_with_items,
@@ -365,6 +411,7 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
             order_with_items,
             was_edited=was_edited,
         )
+        logger.info(user_reply_message)
 
     except json.JSONDecodeError:
         user_reply_message = ms.failed_to_send_order_message
