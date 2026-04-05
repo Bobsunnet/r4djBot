@@ -1,0 +1,55 @@
+services:
+
+  postgres:
+    image: postgres:14.20-bookworm
+    container_name: pg-bot
+    ports:
+      - "5432:5432"
+    restart: always
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - pg-bot-data:/var/lib/postgresql/data
+    networks:
+      - dbnet
+
+  adminer:
+    image: adminer
+    ports:
+      - "8080:8080"
+    links:
+      - "postgres:db"
+    depends_on:
+      - postgres
+    networks:
+      - dbnet
+
+  tgbot:
+    build: .
+    image: tgbot:1.5.5
+    container_name: bot
+    volumes:
+      - ./:/r4bot
+    ports:
+      - "8000:8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - dbnet
+    depends_on:
+      - postgres
+
+networks:
+  dbnet:
+    driver: bridge
+
+volumes:
+  pg-bot-data:

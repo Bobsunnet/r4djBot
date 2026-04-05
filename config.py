@@ -12,6 +12,12 @@ DAY_IN_SECONDS = 86400
 
 TRUE_VALUES = ("true", "1")
 
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_NAME = os.getenv("DB_NAME")
+
 
 class TelegramSettings(BaseSettings):
     bot_token: str = os.getenv("BOT_TOKEN")
@@ -26,7 +32,7 @@ class CacheSettings(BaseSettings):
 
 
 class DbSettings(BaseSettings):
-    db_url: str = os.getenv("DB_URL")
+    db_url: str = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     echo: bool = os.getenv("ECHO", "False").lower() in TRUE_VALUES
     sync_db: bool = os.getenv("SYNC_DB", "False").lower() in TRUE_VALUES
     sync_db_interval: int = int(os.getenv("SYNC_DB_INTERVAL", "60"))
@@ -43,4 +49,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-print()

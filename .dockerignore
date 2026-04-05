@@ -1,0 +1,16 @@
+.pytest_cache/
+.venv/
+
+.vscode/
+r4DB.db
+docs/
+sandbox_run.py
+practice_db_queries.py
+check.sql
+aiogram_calendar/tests/
+.pre-commit-config.yaml
+calendar_bot.py
+.agent/
+# .env 
+
+dev-tools/
