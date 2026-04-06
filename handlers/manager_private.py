@@ -1,6 +1,8 @@
 import enum
+import re
 
 from aiogram import F, Router, html
+from aiogram.filters import Command
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardButton
@@ -129,6 +131,26 @@ async def cancelled_orders_list(message: Message, session: AsyncSession):
         message=message, session=session, status=OrderStatus.CANCELLED
     )
 
+@manager_router.message(lambda m: re.match(r"^/order_(\d+)$", m.text))
+async def order_by_id(message: Message, session: AsyncSession):
+    match = re.match(r"^/order_(\d+)$", message.text)
+    order_id = int(match.group(1))
+    order = await crud.get_order_by_id(session=session, order_id=order_id)
+    if order is None:
+        await message.answer("Замовлення не знайдено", show_alert=True)
+        return
+
+    await message.answer(
+            OrderDetailsAdminMessage(
+                order=order,
+                items=[],
+                user=order.user,
+            ).build_preview_message(),
+            reply_markup=make_admin_order_inline_kb(
+                order_id=order.id,
+                status=order.status,
+            ),
+        )
 
 async def change_order_status(
     callback_query: CallbackQuery, callback_data: OrderCallbackData, session: AsyncSession, status: OrderStatus

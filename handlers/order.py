@@ -12,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback, get_user_locale
 from db_handler import crud
-from db_handler.models import Order, OrderItemAssociation
 from filters import TextOrCommand
 from keyboards.keyboard import (
     make_cancel_kb,

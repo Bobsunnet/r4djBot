@@ -228,3 +228,4 @@ calendar_bot.py
 
 /dev-tools/*
 !/dev-tools/.gitkeep
+compose.yaml
