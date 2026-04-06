@@ -4,6 +4,8 @@ services:
     image: postgres:14.20-bookworm
     container_name: pg-bot
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
@@ -24,7 +26,7 @@ services:
 
   tgbot:
     build: .
-    image: tgbot:1.5.5
+    image: tgbot:1.6.0
     container_name: bot
     ports:
       - "8000:8000"
