@@ -15,25 +15,16 @@ services:
     networks:
       - dbnet
 
-  adminer:
-    image: adminer
-    ports:
-      - "8081:8080"
-    depends_on:
-      - postgres
-    networks:
-      - dbnet
-
   tgbot:
     build: .
     image: tgbot:1.6.0
     container_name: bot
     ports:
       - "8000:8000"
-    logging:
-      driver: "journald"
-      options:
-        tag: "{{.Name}}"
+    # logging:
+    #   driver: "journald"
+    #   options:
+    #     tag: "{{.Name}}"
     restart: unless-stopped
     volumes:
       - ./:/r4bot

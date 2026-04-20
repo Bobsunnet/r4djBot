@@ -60,7 +60,7 @@ async def change_active_order_to_completed():
     """Change status of active orders to completed if they are overdue."""
     stmt = (
         update(Order)
-        .where(Order.status == OrderStatus.ACTIVE)
+        .where(Order.status.in_([OrderStatus.ACTIVE, OrderStatus.PENDING]))
         .where(Order.date_end < date.today())
         .values(status=OrderStatus.COMPLETED)
     )
