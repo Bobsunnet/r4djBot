@@ -8,6 +8,7 @@ from config import settings
 from db_handler.api_calls import get_prices_data
 from db_handler.db_helper import db_helper
 from db_handler.models import Base, Item, Order, OrderStatus
+from utils.datetimes import get_buisiness_time_now
 
 logger = getLogger(__name__)
 
@@ -61,7 +62,7 @@ async def change_active_order_to_completed():
     stmt = (
         update(Order)
         .where(Order.status.in_([OrderStatus.ACTIVE, OrderStatus.PENDING]))
-        .where(Order.date_end < date.today())
+        .where(Order.date_end < get_buisiness_time_now().date())
         .values(status=OrderStatus.COMPLETED)
     )
     async with db_helper.engine.begin() as conn:
