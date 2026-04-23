@@ -378,8 +378,7 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
         web_app_data = json.loads(message.web_app_data.data)
         items = web_app_data.get("items", [])
         if not items:
-            await message.answer("Ви не вибрали жодної позиції обладнання", reply_markup=make_user_kb())
-            await state.clear()
+            user_reply_message = "Ви не вибрали жодної позиції обладнання. Замовлення не створено."
             return
 
         order_id = state_data.get("order_id_for_edit")

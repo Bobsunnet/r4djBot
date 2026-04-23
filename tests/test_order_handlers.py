@@ -1,8 +1,11 @@
 import json
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from aiogram.fsm.context import FSMContext
-from handlers.order import order_final, OrderStates, order_edit
+
+from handlers.order import OrderStates, order_edit, order_final
+
 
 @pytest.mark.asyncio
 async def test_order_states_isolation():

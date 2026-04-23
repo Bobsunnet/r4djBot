@@ -133,7 +133,6 @@ async def cancelled_orders_list(message: Message, session: AsyncSession):
 
 @manager_router.message(F.text, lambda m: re.match(r"^/order_(\d+)$", m.text))
 async def order_by_id(message: Message, session: AsyncSession):
-    print(message.text)
     match = re.match(r"^/order_(\d+)$", message.text)
     order_id = int(match.group(1))
     order = await crud.get_order_by_id(session=session, order_id=order_id)
