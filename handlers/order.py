@@ -339,7 +339,7 @@ async def order_comment(message: Message, state: FSMContext, session: AsyncSessi
     if order_id:
         order_orm = await crud.get_order_with_items(session, order_id)
         if order_orm:
-            items = order_orm.items_details
+            items = list(filter(lambda x: not x.item.is_deleted, order_orm.items_details))
     
     if message.text == '.':
         if order_id is None:

@@ -18,7 +18,10 @@ class OrderBaseMsgBuilder:
     def _build_items_text(self) -> str:
         items_text = ""
         for entry in self.items:
-            items_text += f"• {html.quote(entry.item.name)} × {entry.quantity} шт.\n"
+            deleted_mark = ""
+            if entry.item.is_deleted:
+                deleted_mark = " <b>(позиція видалена)</b>"
+            items_text += f"• {html.quote(entry.item.name)} × {entry.quantity} шт.{deleted_mark}\n"
         return items_text
 
     def get_general_header_text(self) -> str:
