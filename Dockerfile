@@ -5,10 +5,13 @@ WORKDIR /r4bot
 RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --upgrade pip wheel
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 8000
+COPY ./entrypoint.sh .
+RUN chmod +x ./entrypoint.sh
 COPY . .
 USER botuser
-CMD ["python", "aiogram_run.py"]
+ENTRYPOINT ["./entrypoint.sh"]
