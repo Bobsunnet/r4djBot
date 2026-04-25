@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Integer, String, func
+from sqlalchemy import Boolean, DateTime, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db_handler.models.base import Base
@@ -25,11 +25,7 @@ class Item(Base):
     last_seen_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=True, index=True
     )
-
-    # orders: Mapped[list["Order"]] = relationship(
-    #     secondary="order_item_association",
-    #     back_populates="items",
-    # )
+    is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
 
     orders_details: Mapped[list["OrderItemAssociation"]] = relationship(
         back_populates="item",
