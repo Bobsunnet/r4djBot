@@ -15,7 +15,7 @@ logger = getLogger(__name__)
 
 
 async def get_items(session: AsyncSession) -> List[Item]:
-    stmt = select(Item).order_by(Item.row_order)
+    stmt = select(Item).order_by(Item.row_order).where(~Item.is_deleted)
     result: Result = await session.execute(stmt)
     items = result.scalars().all()
     return list(items)

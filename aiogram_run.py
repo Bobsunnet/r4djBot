@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 async def startup_db():
-    # await create_db()
     await bulk_insert_items()
     await change_active_order_to_completed()
 

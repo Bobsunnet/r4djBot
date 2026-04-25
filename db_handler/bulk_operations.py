@@ -49,11 +49,13 @@ async def bulk_insert_items():
             "amount": stmt.excluded.amount,
             "price": stmt.excluded.price,
             "last_seen_at": sync_time,
+            "is_deleted": False,
         },
     )
     async with db_helper.engine.begin() as conn:
         await conn.execute(stmt)
-        await conn.execute(delete(table).where(table.c.last_seen_at < sync_time))
+        mark_deleted_stmt = update(Item).where(Item.last_seen_at < sync_time).values(is_deleted=True)
+        await conn.execute(mark_deleted_stmt)
         logger.info("SYNC IS ON. Database SYNCED successfully.")
 
 
