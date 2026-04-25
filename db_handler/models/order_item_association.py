@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, UniqueConstraint
+from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -19,8 +19,9 @@ class OrderItemAssociation(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), nullable=False)
     item_hash_code: Mapped[str] = mapped_column(
-        ForeignKey("items.hash_code"), nullable=False
+        ForeignKey("items.hash_code"), nullable=True
     )
+    item_name: Mapped[str] = mapped_column(String(512), nullable=True)
     quantity: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, server_default="1"
     )
