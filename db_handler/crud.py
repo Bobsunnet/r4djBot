@@ -158,10 +158,8 @@ async def get_orders_by_userid(
     """
     stmt = (
         select(Order)
-        # .options(
-        #     selectinload(Order.items_details).joinedload(OrderItemAssociation.item)
-        # )
         .where(Order.user_id == user_id)
+        .order_by(Order.date_end.asc())
     )
     result: Result = await session.execute(stmt)
     orders = result.scalars().all()
@@ -182,6 +180,7 @@ async def get_orders_by_userid_and_date_start(
             extract("year", Order.date_start) == date.year,
             extract("month", Order.date_start) == date.month,
         )
+        .order_by(Order.date_end.asc())
     )
     result: Result = await session.execute(stmt)
     orders = result.scalars().all()
@@ -204,6 +203,7 @@ async def get_orders_with_status_and_date_start(
             extract("year", Order.date_start) == date.year,
             extract("month", Order.date_start) == date.month,
         )
+        .order_by(Order.date_end.asc())
     )
     result: Result = await session.execute(stmt)
     orders = result.scalars().all()
