@@ -84,12 +84,17 @@ def make_admin_order_inline_kb(order_id: int, status: OrderStatus):
 
 
 def make_user_order_inline_kb(order_id: int, status: OrderStatus):
-    return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(
+    keyboard = [[InlineKeyboardButton(
             text="Детальніше",
             callback_data=f"show_details_{order_id}",
-        )], [InlineKeyboardButton(
-            text="Редагувати(beta)",
-            callback_data=f"edit_order_{order_id}",
-        )]],
+        )]]
+    if status == OrderStatus.PENDING or status == OrderStatus.ACTIVE:
+        keyboard.append(
+            [InlineKeyboardButton(
+                text="Редагувати(beta)",
+                callback_data=f"edit_order_{order_id}",
+            )]
+        )
+    return InlineKeyboardMarkup(
+        inline_keyboard=keyboard
     )
