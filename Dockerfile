@@ -11,7 +11,7 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 8000
 COPY ./entrypoint.sh .
-RUN chmod +x ./entrypoint.sh
 COPY . .
+RUN chmod +x ./entrypoint.sh
 USER botuser
 ENTRYPOINT ["./entrypoint.sh"]
