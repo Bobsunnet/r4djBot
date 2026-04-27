@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback, get_user_locale
 from db_handler import crud
+from db_handler.models import Order, OrderStatus
 from filters import TextOrCommand
 from keyboards.keyboard import (
     make_cancel_kb,
@@ -73,14 +74,19 @@ async def order_edit(callback_query: CallbackQuery, state: FSMContext, session: 
     logger.info(f'start order editing, callback_query= {callback_query.data}')
     await state.clear()
 
-    order_orm = await crud.get_order_with_items(
+    order: Order | None = await crud.get_order_with_items(
         session=session,
         order_id=int(callback_query.data.split("_")[2]),
     )
-    logger.info(order_orm)
+    logger.info(f"Order instance: {order}")
     
-    if not order_orm:
+    if not order:
         await callback_query.answer("Замовлення не знайдено", show_alert=True)
+        await state.clear()
+        return 
+
+    if order.status in (OrderStatus.CANCELLED, OrderStatus.COMPLETED):
+        await callback_query.answer("Термін редагування замовлення сплинув", show_alert=True)
         await state.clear()
         return 
     
@@ -88,7 +94,7 @@ async def order_edit(callback_query: CallbackQuery, state: FSMContext, session: 
         "Починаємо редагування замовлення, для пропуску кроку введіть . (крапку)", reply_markup=make_cancel_kb()
     )
     await state.set_state(OrderStates.date_start)
-    await state.update_data(order_id_for_edit=order_orm.id)
+    await state.update_data(order_id_for_edit=order.id)
     calendar = construct_calendar(await get_user_locale(callback_query.from_user))
     msg = await callback_query.message.answer(
         order_msgs["date_start"],
