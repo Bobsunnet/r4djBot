@@ -226,6 +226,6 @@ aiogram_calendar/tests/
 calendar_bot.py
 .agent/
 
-/dev-tools/*
-!/dev-tools/.gitkeep
+/dev_tools/*
+!/dev_tools/.gitkeep
 compose.yaml
