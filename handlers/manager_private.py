@@ -2,7 +2,6 @@ import enum
 import re
 
 from aiogram import F, Router, html
-from aiogram.filters import Command
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardButton
