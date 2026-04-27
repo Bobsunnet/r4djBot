@@ -10,8 +10,8 @@ RUN pip install --upgrade pip wheel
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 8000
+COPY . .
 COPY ./entrypoint.sh .
 RUN chmod +x ./entrypoint.sh
-COPY . .
 USER botuser
 ENTRYPOINT ["./entrypoint.sh"]
