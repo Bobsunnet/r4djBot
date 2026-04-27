@@ -40,20 +40,6 @@ async def handle_index(request):
     return web.FileResponse(index_path)
 
 
-@router.get("/static/{filename}")
-async def handle_static(request):
-    """Serve static files (CSS, JS)."""
-    filename = request.match_info["filename"]
-    file_path = WEBAPP_DIR / filename
-
-    if not file_path.exists():
-        return web.Response(status=404, text="File not found")
-
-    return web.FileResponse(
-        file_path, headers={"Cache-Control": f"max-age={settings.cache.js_cache_ttl}"}
-    )
-
-
 @router.get("/api/items")
 async def handle_api_items(request):
     """Return all items as JSON."""
@@ -68,10 +54,10 @@ async def handle_api_items(request):
 async def start_server(host="127.0.0.1", port=8000):
     """Start the aiohttp web server."""
     app = web.Application()
-
+    CUSTOM_LOG_FORMAT = '%{X-Forwarded-For}i %t "%r" %s %b "%{Referer}i" "%{User-Agent}i"'
     # Routes
     app.router.add_routes(router)
-
+    app.router.add_static("/static", path=WEBAPP_DIR, name='static')
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, host, port)
