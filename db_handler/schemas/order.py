@@ -11,7 +11,7 @@ class OrderBase(BaseModel):
     date_end: date
     work_days: int
     address: str
-    description: str | None = None
+    description: str = ""
     cost: int | None = None
     status: OrderStatus = OrderStatus.PENDING
 
