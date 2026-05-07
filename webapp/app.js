@@ -15,8 +15,8 @@ let fuse;
 
 const fuseOptions = {
     keys: ['name', 'desc'],
-    threshold: 0.3,
-    includeScore: true,
+    threshold: 0.4,
+    ignoreLocation: true,
 }
 
 // Parse URL Parameters
@@ -46,13 +46,14 @@ if (workDaysDisplay) {
 }
 
 
-function init_cart(items){
+function initCart(items){
     if (preservedItems.length > 0) {
         cart = preservedItems.map(preservedItem => (
             {
-            item: items.find(i => i.hash_code === preservedItem.hash_code),
-            quantity: preservedItem.quantity
-        }));
+                item: items.find(i => i.hash_code === preservedItem.hash_code),
+                quantity: preservedItem.quantity,
+            }
+        ));
     }
 }
 
@@ -86,6 +87,7 @@ function updateFilteredList() {
     }
 
     const filtered = fuse.search(filterString).map(result => result.item);
+    console.log('Filtered items:', filtered);
 
     // const filtered = allItems.filter(i => 
     //         i.name.toLowerCase().includes(filterString.toLowerCase()) || 
@@ -276,22 +278,25 @@ tg.MainButton.onClick(() => {
     tg.sendData(JSON.stringify(orderData));
 });
 
-// Initialize
-loadItems()
-.then(itms => {
-    if (itms) {
-        allItems = itms;
+async function init() {
+    try {
+        const items = await loadItems();
+
+        allItems = items;
         fuse = new Fuse(allItems, fuseOptions);
+        initCart(allItems);
         renderItemsList(allItems);
+    } catch (error) {
+        console.error('Failed to initialize app:', error);
+        allItems = [];
+        fuse = new Fuse([], fuseOptions);
+        renderItemsList([]);
+    } finally {
+        updateCartUI();
     }
-    return itms;
-})
-.then(itms => {
-    if (itms) {
-        init_cart(itms)
-    }
-    updateCartUI();
-})
+}
+
+init();
 
 
 tg.MainButton.show();
