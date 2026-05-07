@@ -1,3 +1,5 @@
+import Fuse from 'https://cdn.jsdelivr.net/npm/fuse.js@7.3.0/dist/fuse.mjs'
+
 import loadItems from './api.js';
 import utils from './utils.js';
 const { escapeHtml, formatWorkDaysText } = utils;
@@ -9,6 +11,13 @@ tg.expand();
 // State
 let allItems = [];
 let cart = []; // Stores {item, quantity} objects
+let fuse;
+
+const fuseOptions = {
+    keys: ['name', 'desc'],
+    threshold: 0.3,
+    includeScore: true,
+}
 
 // Parse URL Parameters
 
@@ -72,11 +81,16 @@ function updateInCartQuantity(itemId, quantity) {
 
 function updateFilteredList() {
     const filterString = searchInput.value;
-    const filtered = filterString ? 
-        allItems.filter(i => 
-            i.name.toLowerCase().includes(filterString.toLowerCase()) || 
-            i.desc.toLowerCase().includes(filterString.toLowerCase())) : 
-        allItems;
+    if (filterString.length === 0) {
+        return allItems
+    }
+
+    const filtered = fuse.search(filterString).map(result => result.item);
+
+    // const filtered = allItems.filter(i => 
+    //         i.name.toLowerCase().includes(filterString.toLowerCase()) || 
+    //         i.desc.toLowerCase().includes(filterString.toLowerCase())
+    //     );
     
     return filtered;
 }
@@ -267,6 +281,7 @@ loadItems()
 .then(itms => {
     if (itms) {
         allItems = itms;
+        fuse = new Fuse(allItems, fuseOptions);
         renderItemsList(allItems);
     }
     return itms;
