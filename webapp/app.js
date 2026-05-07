@@ -10,12 +10,13 @@ tg.expand();
 
 // State
 let allItems = [];
+let itemsById = new Map();
 let cart = []; // Stores {item, quantity} objects
 let fuse;
 
 const fuseOptions = {
     keys: ['name', 'desc'],
-    threshold: 0.4,
+    threshold: 0.25,
     ignoreLocation: true,
 }
 
@@ -58,6 +59,16 @@ function initCart(items){
 }
 
 // Get quantity of item in cart
+function getItemById(itemId) {
+    return itemsById.get(itemId);
+}
+
+function setItems(items) {
+    allItems = items;
+    itemsById = new Map(allItems.map(item => [item.id, item]));
+    fuse = new Fuse(allItems, fuseOptions);
+}
+
 function getCartQuantity(itemId) {
     const cartItem = cart.find(c => c.item.id === itemId);
     return cartItem ? cartItem.quantity : 0;
@@ -65,7 +76,7 @@ function getCartQuantity(itemId) {
 
 // Update quantity in cart
 function updateInCartQuantity(itemId, quantity) {
-    const item = allItems.find(i => i.id === itemId);
+    const item = getItemById(itemId);
     if (!item) return;
 
     const entryIndex = cart.findIndex(entry => entry.item.id === itemId);
@@ -77,17 +88,16 @@ function updateInCartQuantity(itemId, quantity) {
     }
     
     updateCartUI();    
-    renderItemsList(updateFilteredList());
+    renderCurrentItems();
 }
 
-function updateFilteredList() {
-    const filterString = searchInput.value;
+function getFilteredItems(query = searchInput.value) {
+    const filterString = query.trim();
     if (filterString.length === 0) {
         return allItems
     }
 
     const filtered = fuse.search(filterString).map(result => result.item);
-    console.log('Filtered items:', filtered);
 
     // const filtered = allItems.filter(i => 
     //         i.name.toLowerCase().includes(filterString.toLowerCase()) || 
@@ -97,9 +107,15 @@ function updateFilteredList() {
     return filtered;
 }
 
+function renderCurrentItems() {
+    renderItemsList(getFilteredItems());
+}
+
 // Increase quantity
 function addToCart(itemId) {
-    const item = allItems.find(i => i.id === itemId);
+    const item = getItemById(itemId);
+    if (!item) return;
+
     const inputField = document.getElementById(`qty-${itemId}`);
     const inputValue = parseInt(inputField.value)
     if (inputValue <= 0) {
@@ -121,7 +137,7 @@ function increaseInCartAmount(itemId) {
     itemQuantityElement.textContent = cartItem.quantity + 1;
     cartItem.quantity += 1;
     updateCartUI();
-    renderItemsList(updateFilteredList());
+    renderCurrentItems();
 }
 
 function decreaseInCartAmount(itemId) {
@@ -130,14 +146,14 @@ function decreaseInCartAmount(itemId) {
     if (cartItem.quantity - 1 < 1) {
         cart.splice(cart.indexOf(cartItem), 1)
         updateCartUI();
-        renderItemsList(updateFilteredList());
+        renderCurrentItems();
         return;
     };
 
     itemQuantityElement.textContent = cartItem.quantity - 1;
     cartItem.quantity -= 1;
     updateCartUI();
-    renderItemsList(updateFilteredList());
+    renderCurrentItems();
 }
 
 // Render items list
@@ -224,7 +240,10 @@ function renderCart() {
  * @param {number} itemId - The ID of the item.
  */
 function updateAddButton(value, itemId) {
-    const item_amount = allItems.find(i => i.id == itemId).amount;
+    const item = getItemById(itemId);
+    if (!item) return;
+
+    const item_amount = item.amount;
     const addButton = document.getElementById(`qty-btn-${itemId}`);
     const inCartAmount = getCartQuantity(itemId);
 
@@ -243,7 +262,7 @@ itemsList.addEventListener('input', (e) => {
 
 
 searchInput.addEventListener('input', () => {
-    renderItemsList(updateFilteredList());
+    renderCurrentItems();
 });
 
 
@@ -282,14 +301,12 @@ async function init() {
     try {
         const items = await loadItems();
 
-        allItems = items;
-        fuse = new Fuse(allItems, fuseOptions);
+        setItems(items);
         initCart(allItems);
         renderItemsList(allItems);
     } catch (error) {
         console.error('Failed to initialize app:', error);
-        allItems = [];
-        fuse = new Fuse([], fuseOptions);
+        setItems([]);
         renderItemsList([]);
     } finally {
         updateCartUI();
