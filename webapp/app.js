@@ -16,7 +16,7 @@ let fuse;
 
 const fuseOptions = {
     keys: ['name', 'desc'],
-    threshold: 0.4,
+    threshold: 0.25,
     ignoreLocation: true,
 }
 
