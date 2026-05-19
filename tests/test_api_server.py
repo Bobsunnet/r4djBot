@@ -5,9 +5,6 @@ from aiohttp import web
 
 from utils.api_server import (
     get_items_json,
-    handle_api_items,
-    handle_index,
-    handle_static,
     router,
 )
 
