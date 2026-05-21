@@ -14,6 +14,7 @@ from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback, get_user_lo
 from db_handler import crud
 from db_handler.models import Order, OrderStatus
 from filters import TextOrCommand
+from keyboards.inline import make_user_order_inline_kb
 from keyboards.keyboard import (
     make_cancel_kb,
     make_user_kb,
@@ -378,6 +379,7 @@ async def order_comment_bad_input(message: Message, state: FSMContext):
 async def order_final(message: Message, state: FSMContext, session: AsyncSession):
     """Process order data sent from the Web App."""
     user_reply_message = ms.failed_to_send_order_message
+    job_status_message = "готово"
 
     try:
         state_data = await state.get_data()
@@ -416,18 +418,25 @@ async def order_final(message: Message, state: FSMContext, session: AsyncSession
             was_edited=was_edited,
         )
         logger.info(user_reply_message)
-
+        await message.answer(
+            text=user_reply_message, 
+            reply_markup=make_user_order_inline_kb(order.id, order.status),
+        )
+        
     except json.JSONDecodeError:
-        user_reply_message = ms.failed_to_send_order_message
+        job_status_message = ms.failed_to_send_order_message
         logger.error(f"Invalid JSON from web app: {message.web_app_data.data}")
 
+
     except Exception as e:
-        user_reply_message = ms.failed_to_send_order_message
+        job_status_message = ms.failed_to_send_order_message
         logger.error(f"Error handling web app data: {e}")
+
 
     finally:
         await state.clear()
-        await message.answer(user_reply_message, reply_markup=make_user_kb())
+        await message.answer(job_status_message, reply_markup=make_user_kb())
+        
 
 
 
