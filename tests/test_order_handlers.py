@@ -102,7 +102,17 @@ async def test_order_final_success_flow():
         _, kwargs = mock_process.call_args
         assert kwargs["order_for_edit"] == order_for_edit
         
-        # Verify user received the success message
-        message.answer.assert_called_with("Order success message", reply_markup=mock_kb())
+        # Verify user received the success message and status update
+        assert message.answer.call_count == 2
+        
+        # First call: confirmation message
+        first_call = message.answer.call_args_list[0]
+        assert first_call.kwargs["text"] == "Order success message"
+        
+        # Second call (finally block): status message
+        second_call = message.answer.call_args_list[1]
+        assert second_call.args[0] == "готово"
+        assert second_call.kwargs["reply_markup"] == mock_kb()
+        
         # Verify state was cleared
         state.clear.assert_called_once()
