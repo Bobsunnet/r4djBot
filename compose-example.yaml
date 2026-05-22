@@ -16,8 +16,9 @@ services:
       - dbnet
 
   tgbot:
-    build: .
-    image: tgbot:1.6.1
+    # build: .
+    # image: tgbot:1.6.1
+    image: ghcr.io/bobsunnet/r4djbot:latest
     container_name: bot
     expose:
       - "8000"
