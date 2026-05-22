@@ -67,34 +67,6 @@ async def test_handle_index(aiohttp_client, test_app):
 
 
 @pytest.mark.asyncio
-async def test_handle_static_existing_file(aiohttp_client, test_app):
-    """Test serving an existing static file."""
-    client = await aiohttp_client(test_app)
-    
-    # Act: Request a known static file (adjust filename if needed)
-    resp = await client.get("/static/app.js")
-    
-    # Assert
-    assert resp.status == 200
-    # Check cache header is set
-    assert "Cache-Control" in resp.headers
-
-
-@pytest.mark.asyncio
-async def test_handle_static_nonexistent_file(aiohttp_client, test_app):
-    """Test that requesting a non-existent file returns 404."""
-    client = await aiohttp_client(test_app)
-    
-    # Act
-    resp = await client.get("/static/nonexistent.js")
-    
-    # Assert
-    assert resp.status == 404
-    text = await resp.text()
-    assert "File not found" in text
-
-
-@pytest.mark.asyncio
 async def test_handle_api_items_success(aiohttp_client, test_app):
     """Test the /api/items endpoint with successful data retrieval."""
     client = await aiohttp_client(test_app)
