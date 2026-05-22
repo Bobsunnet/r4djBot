@@ -258,6 +258,20 @@ async def process_date_end_calendar(
     calendar = await get_calendar_for_user(callback_query)
     selected, date = await calendar.process_selection(callback_query, callback_data)
     if selected:
+        state_data = await state.get_data()
+        date_start = state_data.get("date_start")
+        if date < date_start or date_start is None:
+            await callback_query.answer(
+                "Дата повернення має бути не раніше дати отримання", show_alert=True
+            )
+            calendar = await get_calendar_for_user(callback_query)
+            msg = await callback_query.message.answer(
+                order_msgs["date_end"],
+                reply_markup=await calendar.start_calendar(),
+            )
+            await state.update_data(last_msg_id=msg.message_id)
+            return
+
         await state.update_data(date_end=date)
         await state.set_state(OrderStates.work_days)
         await callback_query.message.edit_text(
