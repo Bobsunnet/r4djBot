@@ -17,7 +17,7 @@ class OrderCallbackData(CallbackData, prefix="order"):
     action: OrderAction
 
 
-class OrderInlineButton:
+class OrderChangeStatusButton:
     def __init__(self, text: str, action: OrderAction):
         self.text = text
         self.action = action
@@ -25,14 +25,29 @@ class OrderInlineButton:
     def __call__(self, order_id: int):
         btn = InlineKeyboardButton(
             text=self.text,
-            callback_data=OrderCallbackData(order_id=order_id, action=self.action).pack(),
+            callback_data=OrderCallbackData(
+                order_id=order_id, action=self.action
+            ).pack(),
         )
         return btn
 
 
-confirm_btn = OrderInlineButton(text="Confirm", action=OrderAction.CONFIRM)
-cancel_btn = OrderInlineButton(text="Cancel", action=OrderAction.CANCEL)
-delete_btn = OrderInlineButton(text="Delete", action=OrderAction.DELETE)
+class OrderDetailsButton:
+    def __init__(self, text: str):
+        self.text = text
+
+    def __call__(self, order_id: int):
+        btn = InlineKeyboardButton(
+            text=self.text,
+            callback_data=f"show_details_{order_id}",
+        )
+        return btn
+
+
+confirm_btn = OrderChangeStatusButton(text="Confirm", action=OrderAction.CONFIRM)
+cancel_btn = OrderChangeStatusButton(text="Cancel", action=OrderAction.CANCEL)
+delete_btn = OrderChangeStatusButton(text="Delete", action=OrderAction.DELETE)
+show_details_btn = OrderDetailsButton(text="Детальніше")
 
 
 def create_pending_buttons(order_id: int):
@@ -72,29 +87,57 @@ def create_admin_order_buttons(order_id: int, status: OrderStatus):
 
 
 def make_admin_order_inline_kb(order_id: int, status: OrderStatus):
+    """
+    Inline keyboard for admin order(show_details, change_status, delete)
+    """
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(
-            text="Детальніше",
-            callback_data=f"show_details_{order_id}",
-        )],
+            [show_details_btn(order_id)],
             create_admin_order_buttons(order_id, status),
         ],
     )
 
 
 def make_user_order_inline_kb(order_id: int, status: OrderStatus):
-    keyboard = [[InlineKeyboardButton(
-            text="Детальніше",
-            callback_data=f"show_details_{order_id}",
-        )]]
+    """
+    Inline keyboard for users order(show_details, edit_all, edit_items)
+    """
+    keyboard = [[show_details_btn(order_id)]]
+
     if status == OrderStatus.PENDING or status == OrderStatus.ACTIVE:
         keyboard.append(
-            [InlineKeyboardButton(
-                text="Редагувати(beta)",
-                callback_data=f"edit_order_{order_id}",
-            )]
+            [
+                InlineKeyboardButton(
+                    text="Редагувати все",
+                    callback_data=f"edit_order_all_{order_id}",
+                )
+            ]
         )
-    return InlineKeyboardMarkup(
-        inline_keyboard=keyboard
-    )
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    text="Редагувати обладнання",
+                    callback_data=f"edit_order_items_{order_id}",
+                )
+            ]
+        )
+
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+def make_edit_choice_kb(order_id: int, status: OrderStatus):
+    """
+    Inline keyboard for users order (show_details, edit_choice)
+    """
+    keyboard = [[show_details_btn(order_id)]]
+
+    if status == OrderStatus.PENDING or status == OrderStatus.ACTIVE:
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    text="Редагувати",
+                    callback_data=f"edit_choice_{order_id}",
+                )
+            ]
+        )
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)

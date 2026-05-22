@@ -2,6 +2,7 @@ from .inline import (
     OrderAction,
     OrderCallbackData,
     make_admin_order_inline_kb,
+    make_edit_choice_kb,
     make_user_order_inline_kb,
 )
 from .keyboard import (
@@ -13,4 +14,3 @@ from .keyboard import (
     make_web_app_kb,
     make_wo_auth_kb,
 )
-

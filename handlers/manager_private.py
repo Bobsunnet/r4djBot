@@ -19,7 +19,7 @@ from keyboards import (
     OrderAction,
     OrderCallbackData,
     make_admin_order_inline_kb,
-    make_user_order_inline_kb,
+    make_edit_choice_kb,
 )
 from utils import messages as ms
 from utils.order_msg_builder import OrderDetailsAdminMessage
@@ -179,7 +179,7 @@ async def change_order_status(
     await callback_query.message.bot.send_message(
         chat_id=order.user.user_id,
         text=user_notification_text,
-        reply_markup=make_user_order_inline_kb(order_id=order.id, status=status),
+        reply_markup=make_edit_choice_kb(order_id=order.id, status=status),
         disable_notification=settings.telegram.disable_notification,
     )
 

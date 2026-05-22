@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db_handler import crud
 from db_handler.models import Order
 from filters.custom import IsManager
-from keyboards import make_admin_order_inline_kb, make_user_order_inline_kb
+from keyboards import make_admin_order_inline_kb, make_edit_choice_kb
 from utils.order_msg_builder import OrderDetailsAdminMessage, OrderDetailsUserMessage
 
 details_router = Router()
@@ -62,7 +62,7 @@ async def show_order_details_user(callback_query: CallbackQuery, session: AsyncS
         ).build_full_message()
         await callback_query.message.edit_text(
             order_full_text,
-            reply_markup=make_user_order_inline_kb(
+            reply_markup=make_edit_choice_kb(
                 order_id=order.id, status=order.status
             ),
         )
