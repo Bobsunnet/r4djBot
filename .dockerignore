@@ -1,6 +1,5 @@
 .pytest_cache/
 .venv/
-
 .vscode/
 r4DB.db
 docs/
@@ -11,6 +10,9 @@ aiogram_calendar/tests/
 .pre-commit-config.yaml
 calendar_bot.py
 .agent/
-# .env 
-
+.git
+.git***
+.github
+.gitignore
+.vscode
 dev-tools/
