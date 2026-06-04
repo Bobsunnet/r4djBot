@@ -1,5 +1,5 @@
 async function loadItems() {
-    const response = await fetch('/api/items');
+    const response = await fetch('api/items');
 
     if (!response.ok) {
         throw new Error(`Failed to load items: ${response.status}`);
