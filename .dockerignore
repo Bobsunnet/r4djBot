@@ -11,8 +11,6 @@ aiogram_calendar/tests/
 calendar_bot.py
 .agent/
 .git
-.git***
-.github
 .gitignore
 .vscode
 dev-tools/
