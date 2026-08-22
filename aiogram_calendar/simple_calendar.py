@@ -1,21 +1,21 @@
 import calendar
 from datetime import datetime, timedelta
 
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 
-from .schemas import SimpleCalendarCallback, SimpleCalAct, highlight, superscript
 from .common import GenericCalendar
+from .schemas import SimpleCalAct, SimpleCalendarCallback, highlight, superscript
 
 
 class SimpleCalendar(GenericCalendar):
-
-    ignore_callback = SimpleCalendarCallback(act=SimpleCalAct.ignore).pack()  # placeholder for no answer buttons
+    ignore_callback = SimpleCalendarCallback(
+        act=SimpleCalAct.ignore
+    ).pack()  # placeholder for no answer buttons
 
     async def start_calendar(
         self,
-        year: int = datetime.now().year,
-        month: int = datetime.now().month
+        year: int | None = None,
+        month: int | None = None,
     ) -> InlineKeyboardMarkup:
         """
         Creates an inline keyboard with the provided year and month
@@ -23,8 +23,13 @@ class SimpleCalendar(GenericCalendar):
         :param int month: Month to use in the calendar, if None the current month is used.
         :return: Returns InlineKeyboardMarkup object with the calendar.
         """
-
         today = datetime.now()
+
+        if year is None:
+            year = today.year
+        if month is None:
+            month = today.month
+
         now_weekday = self._labels.days_of_week[today.weekday()]
         now_month, now_year, now_day = today.month, today.year, today.day
 
@@ -59,41 +64,62 @@ class SimpleCalendar(GenericCalendar):
         # inline_kb = InlineKeyboardMarkup(row_width=7)
         # First row - Year
         years_row = []
-        years_row.append(InlineKeyboardButton(
-            text="<<",
-            callback_data=SimpleCalendarCallback(act=SimpleCalAct.prev_y, year=year, month=month, day=1).pack()
-        ))
-        years_row.append(InlineKeyboardButton(
-            text=str(year) if year != now_year else highlight(year),
-            callback_data=self.ignore_callback
-        ))
-        years_row.append(InlineKeyboardButton(
-            text=">>",
-            callback_data=SimpleCalendarCallback(act=SimpleCalAct.next_y, year=year, month=month, day=1).pack()
-        ))
+        years_row.append(
+            InlineKeyboardButton(
+                text="<<",
+                callback_data=SimpleCalendarCallback(
+                    act=SimpleCalAct.prev_y, year=year, month=month, day=1
+                ).pack(),
+            )
+        )
+        years_row.append(
+            InlineKeyboardButton(
+                text=str(year) if year != now_year else highlight(year),
+                callback_data=self.ignore_callback,
+            )
+        )
+        years_row.append(
+            InlineKeyboardButton(
+                text=">>",
+                callback_data=SimpleCalendarCallback(
+                    act=SimpleCalAct.next_y, year=year, month=month, day=1
+                ).pack(),
+            )
+        )
         kb.append(years_row)
 
         # Month nav Buttons
         month_row = []
-        month_row.append(InlineKeyboardButton(
-            text="<",
-            callback_data=SimpleCalendarCallback(act=SimpleCalAct.prev_m, year=year, month=month, day=1).pack()
-        ))
-        month_row.append(InlineKeyboardButton(
-            text=highlight_month(),
-            callback_data=self.ignore_callback
-        ))
-        month_row.append(InlineKeyboardButton(
-            text=">",
-            callback_data=SimpleCalendarCallback(act=SimpleCalAct.next_m, year=year, month=month, day=1).pack()
-        ))
+        month_row.append(
+            InlineKeyboardButton(
+                text="<",
+                callback_data=SimpleCalendarCallback(
+                    act=SimpleCalAct.prev_m, year=year, month=month, day=1
+                ).pack(),
+            )
+        )
+        month_row.append(
+            InlineKeyboardButton(
+                text=highlight_month(), callback_data=self.ignore_callback
+            )
+        )
+        month_row.append(
+            InlineKeyboardButton(
+                text=">",
+                callback_data=SimpleCalendarCallback(
+                    act=SimpleCalAct.next_m, year=year, month=month, day=1
+                ).pack(),
+            )
+        )
         kb.append(month_row)
 
         # Week Days
         week_days_labels_row = []
         for weekday in self._labels.days_of_week:
             week_days_labels_row.append(
-                InlineKeyboardButton(text=highlight_weekday(), callback_data=self.ignore_callback)
+                InlineKeyboardButton(
+                    text=highlight_weekday(), callback_data=self.ignore_callback
+                )
             )
         kb.append(week_days_labels_row)
 
@@ -104,34 +130,56 @@ class SimpleCalendar(GenericCalendar):
             days_row = []
             for day in week:
                 if day == 0:
-                    days_row.append(InlineKeyboardButton(text=" ", callback_data=self.ignore_callback))
+                    days_row.append(
+                        InlineKeyboardButton(
+                            text=" ", callback_data=self.ignore_callback
+                        )
+                    )
                     continue
-                days_row.append(InlineKeyboardButton(
-                    text=highlight_day(),
-                    callback_data=SimpleCalendarCallback(act=SimpleCalAct.day, year=year, month=month, day=day).pack()
-                ))
+                days_row.append(
+                    InlineKeyboardButton(
+                        text=highlight_day(),
+                        callback_data=SimpleCalendarCallback(
+                            act=SimpleCalAct.day, year=year, month=month, day=day
+                        ).pack(),
+                    )
+                )
             kb.append(days_row)
 
         # nav today & cancel button
         cancel_row = []
-        cancel_row.append(InlineKeyboardButton(
-            text=self._labels.cancel_caption,
-            callback_data=SimpleCalendarCallback(act=SimpleCalAct.cancel, year=year, month=month, day=day).pack()
-        ))
-        cancel_row.append(InlineKeyboardButton(text=" ", callback_data=self.ignore_callback))
-        cancel_row.append(InlineKeyboardButton(
-            text=self._labels.today_caption,
-            callback_data=SimpleCalendarCallback(act=SimpleCalAct.today, year=year, month=month, day=day).pack()
-        ))
+        cancel_row.append(
+            InlineKeyboardButton(
+                text=self._labels.cancel_caption,
+                callback_data=SimpleCalendarCallback(
+                    act=SimpleCalAct.cancel, year=year, month=month, day=day
+                ).pack(),
+            )
+        )
+        cancel_row.append(
+            InlineKeyboardButton(text=" ", callback_data=self.ignore_callback)
+        )
+        cancel_row.append(
+            InlineKeyboardButton(
+                text=self._labels.today_caption,
+                callback_data=SimpleCalendarCallback(
+                    act=SimpleCalAct.today, year=year, month=month, day=day
+                ).pack(),
+            )
+        )
         kb.append(cancel_row)
         return InlineKeyboardMarkup(row_width=7, inline_keyboard=kb)
 
     async def _update_calendar(self, query: CallbackQuery, with_date: datetime):
         await query.message.edit_reply_markup(
-            reply_markup=await self.start_calendar(int(with_date.year), int(with_date.month))
+            reply_markup=await self.start_calendar(
+                int(with_date.year), int(with_date.month)
+            )
         )
 
-    async def process_selection(self, query: CallbackQuery, data: SimpleCalendarCallback) -> tuple:
+    async def process_selection(
+        self, query: CallbackQuery, data: SimpleCalendarCallback
+    ) -> tuple:
         """
         Process the callback_query. This method generates a new calendar if forward or
         backward is pressed. This method should be called inside a CallbackQueryHandler.

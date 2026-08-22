@@ -1,4 +1,3 @@
-from keyboards.inline import make_user_order_inline_kb
 import json
 import logging
 from datetime import datetime, timedelta
@@ -15,7 +14,7 @@ from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback, get_user_lo
 from db_handler import crud
 from db_handler.models import Order, OrderStatus
 from filters import TextOrCommand
-from keyboards.inline import make_edit_choice_kb
+from keyboards.inline import make_edit_choice_kb, make_user_order_inline_kb
 from keyboards.keyboard import (
     make_cancel_kb,
     make_user_kb,
